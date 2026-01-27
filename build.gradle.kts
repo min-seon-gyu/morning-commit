@@ -23,18 +23,32 @@ repositories {
 extra["springCloudVersion"] = "2025.1.0"
 
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-batch")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-webmvc")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.springframework.cloud:spring-cloud-starter-openfeign")
     implementation("tools.jackson.module:jackson-module-kotlin")
+
+    implementation("org.springframework.boot:spring-boot-starter-batch")
+
+    // Database
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     runtimeOnly("com.mysql:mysql-connector-j")
+
+    // External API (AI 요약 연동)
+    implementation("org.springframework.cloud:spring-cloud-starter-openfeign")
+
+    // Messaging & Email (발송기)
+    implementation("org.springframework.boot:spring-boot-starter-amqp") // RabbitMQ
+    implementation("org.springframework.boot:spring-boot-starter-mail") // 이메일 발송
+
+    // Crawling & Parsing (수집기)
+    implementation("com.rometools:rome:1.18.0") // RSS/Atom 파싱 표준 라이브러리
+    implementation("org.jsoup:jsoup:1.17.2") // HTML 파싱 (본문 스크래핑용)
+
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("org.springframework.boot:spring-boot-starter-batch-test")
     testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 dependencyManagement {
