@@ -28,6 +28,7 @@ MorningCommit is a daily tech blog newsletter service that:
 2. Scrapes full article content
 3. Summarizes using OpenAI GPT
 4. Delivers personalized newsletters via email
+5. Tracks link clicks for analytics
 
 ## Tech Stack
 
@@ -44,45 +45,59 @@ MorningCommit is a daily tech blog newsletter service that:
 ## Architecture
 
 ```
-Daily Scheduler (7 AM)
+blogCrawlingJob (Daily at 1 AM)
     │
-    ├─► blogCrawlingJob
-    │       ├─► Read active BlogSource entities
-    │       ├─► Fetch RSS feeds (Rome)
-    │       ├─► Filter posts < 7 days old
-    │       ├─► Scrape full content (Jsoup)
-    │       ├─► Summarize (OpenAI via Feign)
-    │       └─► Save Post entities
+    ├─► Read active BlogSource entities
+    ├─► Fetch RSS feeds (Rome)
+    ├─► Filter recent posts
+    ├─► Scrape full content (Jsoup)
+    ├─► Summarize (OpenAI via Feign)
+    └─► Save Post entities
+
+emailDeliveryJob (Daily at 7 AM)
     │
-    └─► emailDeliveryJob (if crawling succeeds)
-            ├─► Read active Subscriber entities
-            ├─► Get today's Post IDs
-            └─► Publish EmailRequest to RabbitMQ
-                    │
-                    └─► EmailConsumer (async)
-                            ├─► Fetch Posts from DB
-                            ├─► Render Thymeleaf template
-                            └─► Send via SMTP
+    ├─► Read active Subscriber entities
+    ├─► Get today's Post IDs
+    └─► Publish EmailRequest to RabbitMQ
+            │
+            └─► EmailConsumer (async)
+                    ├─► Fetch Posts from DB
+                    ├─► Transform links to tracking URLs
+                    ├─► Render Thymeleaf template
+                    └─► Send via SMTP
+
+Click Tracking Flow
+    │
+    User clicks tracked link in email
+    │
+    └─► GET /track?url={encodedUrl}&subscriberId={id}
+            ├─► Publish ClickLogEvent to RabbitMQ
+            ├─► Redirect to original URL (302)
+            │
+            └─► TrackingConsumer (async)
+                    └─► Save ClickLog entity to DB
 ```
 
 ## Package Structure
 
 ```
 server.morningcommit
-├── domain/           # JPA Entities (BlogSource, Post, Subscriber, BaseEntity)
+├── domain/           # JPA Entities (BlogSource, Post, Subscriber, ClickLog, BaseEntity)
 ├── repository/       # Spring Data JPA Repositories
 ├── batch/            # Spring Batch Jobs (BlogCrawlingJob, EmailDeliveryJob)
 ├── scheduler/        # @Scheduled job orchestration
 ├── scraper/          # HtmlScraper (Jsoup)
+├── controller/       # Web Controllers (ViewController, TrackingController)
 ├── ai/
 │   ├── client/       # OpenAiClient (Feign)
 │   ├── dto/          # ChatCompletion DTOs
 │   └── service/      # SummaryService
 ├── email/
-│   ├── dto/          # EmailRequest
+│   ├── dto/          # EmailRequest, ClickLogEvent, TrackedPost
 │   ├── EmailService  # Thymeleaf + JavaMailSender
 │   ├── EmailProducer # RabbitMQ publisher
-│   └── EmailConsumer # RabbitMQ listener
+│   ├── EmailConsumer # RabbitMQ listener
+│   └── TrackingConsumer # Click tracking listener
 └── config/           # Spring configurations
 ```
 
@@ -102,6 +117,7 @@ server.morningcommit
 | `MAIL_PORT` | `465` | SMTP port |
 | `MAIL_USERNAME` | - | SMTP username |
 | `MAIL_PASSWORD` | - | SMTP password |
+| `app.tracking.base-url` | `http://localhost:18080/track` | Base URL for click tracking |
 
 ## Key Components
 
@@ -110,13 +126,23 @@ server.morningcommit
 - **emailDeliveryJob**: Reads subscribers, creates EmailRequests, publishes to RabbitMQ
 
 ### RabbitMQ
-- Queue: `email-queue`
 - Exchange: `email-exchange` (Direct)
-- Routing Key: `send-email`
+- Queues:
+  - `email-queue` (Routing Key: `send-email`) - Email delivery
+  - `tracking-queue` (Routing Key: `tracking-log`) - Click tracking
 
 ### Scheduler
-- Cron: `0 0 7 * * *` (Daily at 7 AM)
-- Runs blogCrawlingJob first, then emailDeliveryJob on success
+- `blogCrawlingJob`: `0 0 1 * * *` (Daily at 1 AM)
+- `emailDeliveryJob`: `0 0 7 * * *` (Daily at 7 AM)
+
+### Web UI
+- `GET /` - Post listing with pagination (9 items/page) and blog filtering
+- Uses Thymeleaf + Tailwind CSS
+
+### Click Tracking
+- `GET /track?url={encodedUrl}&subscriberId={id}` - Tracks click and redirects (302)
+- Links in newsletter emails are wrapped with tracking URLs
+- Click events stored in `ClickLog` entity for analytics
 
 ## Code Conventions
 
