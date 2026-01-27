@@ -22,3 +22,6 @@ spring:
             mode: none
     show-sql: false
     open-in-view: false
+
+openai:
+  api-key: ${OPENAI_API_KEY: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}
