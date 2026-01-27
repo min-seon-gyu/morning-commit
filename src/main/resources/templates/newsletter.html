@@ -91,7 +91,7 @@
                 <a th:href="${post.link}" th:text="${post.title}" target="_blank">Post Title</a>
             </h2>
             <div class="post-meta">
-                <span th:text="${post.blogName}">Blog Name</span>
+                <span th:text="${post.blog.displayName}">Blog Name</span>
                 <span th:if="${post.publishDate}">
                     &middot; <span th:text="${#temporals.format(post.publishDate, 'yyyy-MM-dd')}">2024-01-01</span>
                 </span>

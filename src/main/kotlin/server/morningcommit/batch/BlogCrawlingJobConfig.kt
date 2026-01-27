@@ -74,7 +74,7 @@ class BlogCrawlingJobConfig(
         val sevenDaysAgo = LocalDateTime.now().minusDays(7)
 
         return ItemProcessor<BlogSource, List<Post>> { blogSource ->
-            log.info("Processing blog: ${blogSource.name}")
+            log.info("Processing blog: ${blogSource.blog.displayName}")
 
             try {
                 val feedUrl = URI(blogSource.rssUrl).toURL()
@@ -116,7 +116,7 @@ class BlogCrawlingJobConfig(
                                 link = link,
                                 description = summary,
                                 publishDate = publishDate,
-                                blogName = blogSource.name
+                                blog = blogSource.blog
                             )
                         } catch (e: Exception) {
                             log.error("Failed to process entry: ${entry.title}", e)
@@ -124,10 +124,10 @@ class BlogCrawlingJobConfig(
                         }
                     }
                     .also { posts ->
-                        log.info("Processed ${posts.size} new posts from ${blogSource.name}")
+                        log.info("Processed ${posts.size} new posts from ${blogSource.blog.displayName}")
                     }
             } catch (e: Exception) {
-                log.error("Failed to process blog source: ${blogSource.name}", e)
+                log.error("Failed to process blog source: ${blogSource.blog.displayName}", e)
                 emptyList()
             }
         }
