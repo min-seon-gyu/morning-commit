@@ -2,23 +2,30 @@ package server.morningcommit.email
 
 import jakarta.mail.internet.MimeMessage
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.mail.javamail.MimeMessageHelper
 import org.springframework.stereotype.Service
 import org.thymeleaf.TemplateEngine
 import org.thymeleaf.context.Context
 import server.morningcommit.domain.Post
+import server.morningcommit.email.dto.TrackedPost
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 @Service
 class EmailService(
     private val mailSender: JavaMailSender,
-    private val templateEngine: TemplateEngine
+    private val templateEngine: TemplateEngine,
+    @Value("\${app.tracking.base-url:http://localhost:18080/track}")
+    private val trackingBaseUrl: String
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    fun sendNewsletter(to: String, posts: List<Post>) {
+    fun sendNewsletter(to: String, posts: List<Post>, subscriberId: Long) {
         try {
-            val htmlContent = renderTemplate(posts)
+            val trackedPosts = posts.map { post -> toTrackedPost(post, subscriberId) }
+            val htmlContent = renderTemplate(trackedPosts)
             val message: MimeMessage = mailSender.createMimeMessage()
 
             MimeMessageHelper(message, true, "UTF-8").apply {
@@ -35,7 +42,20 @@ class EmailService(
         }
     }
 
-    private fun renderTemplate(posts: List<Post>): String {
+    private fun toTrackedPost(post: Post, subscriberId: Long): TrackedPost {
+        val encodedUrl = URLEncoder.encode(post.link, StandardCharsets.UTF_8)
+        val trackedLink = "$trackingBaseUrl?url=$encodedUrl&subscriberId=$subscriberId"
+
+        return TrackedPost(
+            title = post.title,
+            link = trackedLink,
+            description = post.description,
+            publishDate = post.publishDate,
+            blog = post.blog
+        )
+    }
+
+    private fun renderTemplate(posts: List<TrackedPost>): String {
         val context = Context().apply {
             setVariable("posts", posts)
         }
