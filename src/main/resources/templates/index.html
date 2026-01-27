@@ -38,7 +38,7 @@
                     <!-- Badge and Date -->
                     <div class="flex items-center justify-between mb-3">
                         <span class="inline-block px-3 py-1 text-xs font-medium text-white bg-indigo-500 rounded-full"
-                              th:text="${post.blogName}">Blog Name</span>
+                              th:text="${post.blog.displayName}">Blog Name</span>
                         <time class="text-sm text-gray-400"
                               th:text="${#temporals.format(post.publishDate, 'yyyy-MM-dd')}">2024-01-01</time>
                     </div>
