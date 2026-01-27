@@ -13,7 +13,7 @@ import jakarta.persistence.Table
 @Table(name = "blog_source")
 class BlogSource(
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 40)
     var blog: Blog,
 
     @Column(nullable = false)
