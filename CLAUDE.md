@@ -15,10 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ./gradlew test
 
 # Run a single test class
-./gradlew test --tests "server.morningcommit.MorningCommitApplicationTests"
-
-# Run a single test method
-./gradlew test --tests "server.morningcommit.MorningCommitApplicationTests.contextLoads"
+./gradlew test --tests "server.morningcommit.RssParsingTest"
 
 # Clean build
 ./gradlew clean build
@@ -26,33 +23,103 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-MorningCommit is a Kotlin/Spring Boot 4 newsletter service that aggregates content from various sources, summarizes it using AI, and delivers it via email.
+MorningCommit is a daily tech blog newsletter service that:
+1. Crawls RSS feeds from tech blogs
+2. Scrapes full article content
+3. Summarizes using OpenAI GPT
+4. Delivers personalized newsletters via email
 
-**Tech Stack:**
-- Kotlin 2.2 with Java 21
-- Spring Boot 4.0.2, Spring Cloud 2025.1.0
-- MySQL with Spring Data JPA
-- RabbitMQ (spring-boot-starter-amqp) for async messaging
-- Spring Mail for email delivery
-- OpenFeign for external AI API integration
-- Rome library for RSS/Atom feed parsing
-- Jsoup for HTML scraping
+## Tech Stack
+
+- **Kotlin 1.9.25** with Java 21
+- **Spring Boot 3.4.2**, Spring Cloud 2024.0.0
+- **Spring Batch 5** for scheduled batch processing
+- **MySQL** with Spring Data JPA
+- **RabbitMQ** for async email delivery
+- **Thymeleaf** for email templates
+- **OpenFeign** for OpenAI API integration
+- **Rome** for RSS/Atom parsing
+- **Jsoup** for HTML scraping
 
 ## Architecture
 
-The application follows a pipeline architecture:
+```
+Daily Scheduler (7 AM)
+    │
+    ├─► blogCrawlingJob
+    │       ├─► Read active BlogSource entities
+    │       ├─► Fetch RSS feeds (Rome)
+    │       ├─► Filter posts < 7 days old
+    │       ├─► Scrape full content (Jsoup)
+    │       ├─► Summarize (OpenAI via Feign)
+    │       └─► Save Post entities
+    │
+    └─► emailDeliveryJob (if crawling succeeds)
+            ├─► Read active Subscriber entities
+            ├─► Get today's Post IDs
+            └─► Publish EmailRequest to RabbitMQ
+                    │
+                    └─► EmailConsumer (async)
+                            ├─► Fetch Posts from DB
+                            ├─► Render Thymeleaf template
+                            └─► Send via SMTP
+```
 
-1. **Collector (수집기)**: Crawls RSS/Atom feeds using Rome, scrapes full article content with Jsoup
-2. **AI Summarizer**: Sends content to external AI service via OpenFeign for summarization
-3. **Dispatcher (발송기)**: Queues emails via RabbitMQ and sends using Spring Mail
-4. **Batch Processing**: Spring Batch handles scheduled content aggregation jobs
+## Package Structure
 
-## Database Configuration
+```
+server.morningcommit
+├── domain/           # JPA Entities (BlogSource, Post, Subscriber, BaseEntity)
+├── repository/       # Spring Data JPA Repositories
+├── batch/            # Spring Batch Jobs (BlogCrawlingJob, EmailDeliveryJob)
+├── scheduler/        # @Scheduled job orchestration
+├── scraper/          # HtmlScraper (Jsoup)
+├── ai/
+│   ├── client/       # OpenAiClient (Feign)
+│   ├── dto/          # ChatCompletion DTOs
+│   └── service/      # SummaryService
+├── email/
+│   ├── dto/          # EmailRequest
+│   ├── EmailService  # Thymeleaf + JavaMailSender
+│   ├── EmailProducer # RabbitMQ publisher
+│   └── EmailConsumer # RabbitMQ listener
+└── config/           # Spring configurations
+```
 
-JPA is configured with batch optimizations (batch_size=100, fetch_size=100).
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `db.url` | `jdbc:mysql://localhost:3306/morningcommit` | MySQL connection URL |
+| `db.username` | `root` | MySQL username |
+| `db.password` | `1234` | MySQL password |
+| `OPENAI_API_KEY` | - | OpenAI API key for summarization |
+| `RABBITMQ_HOST` | `localhost` | RabbitMQ host |
+| `RABBITMQ_PORT` | `5672` | RabbitMQ port |
+| `RABBITMQ_USERNAME` | `guest` | RabbitMQ username |
+| `RABBITMQ_PASSWORD` | `guest` | RabbitMQ password |
+| `MAIL_HOST` | `smtp.naver.com` | SMTP server |
+| `MAIL_PORT` | `465` | SMTP port |
+| `MAIL_USERNAME` | - | SMTP username |
+| `MAIL_PASSWORD` | - | SMTP password |
+
+## Key Components
+
+### Batch Jobs
+- **blogCrawlingJob**: Crawls RSS, scrapes content, summarizes, saves to DB
+- **emailDeliveryJob**: Reads subscribers, creates EmailRequests, publishes to RabbitMQ
+
+### RabbitMQ
+- Queue: `email-queue`
+- Exchange: `email-exchange` (Direct)
+- Routing Key: `send-email`
+
+### Scheduler
+- Cron: `0 0 7 * * *` (Daily at 7 AM)
+- Runs blogCrawlingJob first, then emailDeliveryJob on success
 
 ## Code Conventions
 
-- Package structure: `server.morningcommit.*`
-- JPA entities must use `allOpen` plugin annotations (`@Entity`, `@MappedSuperclass`, `@Embeddable`)
-- Kotlin compiler uses strict JSR-305 null-safety mode
+- Package: `server.morningcommit.*`
+- JPA entities use `allOpen` plugin for `@Entity`, `@MappedSuperclass`, `@Embeddable`
+- Kotlin strict JSR-305 null-safety mode enabled
