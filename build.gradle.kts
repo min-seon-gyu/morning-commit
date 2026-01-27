@@ -28,6 +28,8 @@ dependencies {
     implementation("tools.jackson.module:jackson-module-kotlin")
 
     implementation("org.springframework.boot:spring-boot-starter-batch")
+    implementation("org.springframework.batch:spring-batch-core")
+    implementation("org.springframework.batch:spring-batch-infrastructure")
 
     // Database
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
@@ -39,6 +41,7 @@ dependencies {
     // Messaging & Email (발송기)
     implementation("org.springframework.boot:spring-boot-starter-amqp") // RabbitMQ
     implementation("org.springframework.boot:spring-boot-starter-mail") // 이메일 발송
+    implementation("org.springframework.boot:spring-boot-starter-thymeleaf") // 이메일 템플릿
 
     // Crawling & Parsing (수집기)
     implementation("com.rometools:rome:1.18.0") // RSS/Atom 파싱 표준 라이브러리
