@@ -21,7 +21,7 @@ class Post(
     @Column(nullable = false)
     var title: String,
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 700)
     var link: String,
 
     @Lob
@@ -31,7 +31,7 @@ class Post(
     var publishDate: LocalDateTime? = null,
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 40)
     var blog: Blog,
 
     @Id
