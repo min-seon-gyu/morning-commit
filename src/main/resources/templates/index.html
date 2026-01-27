@@ -27,12 +27,30 @@
 
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Filter Section -->
+        <div class="mb-8 overflow-x-auto">
+            <div class="flex gap-2 pb-2 min-w-max">
+                <a th:href="@{/}"
+                   th:classappend="${currentBlog == null} ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'"
+                   class="px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 shadow-sm whitespace-nowrap">
+                    All
+                </a>
+                <a th:each="blog : ${blogs}"
+                   th:href="@{/(blog=${blog})}"
+                   th:text="${blog.displayName}"
+                   th:classappend="${blog == currentBlog} ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'"
+                   class="px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 shadow-sm whitespace-nowrap">
+                    Blog Name
+                </a>
+            </div>
+        </div>
+
         <!-- Posts Grid -->
-        <div th:if="${not #lists.isEmpty(posts)}"
+        <div th:if="${not #lists.isEmpty(posts.content)}"
              class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
             <!-- Post Card -->
-            <article th:each="post : ${posts}"
+            <article th:each="post : ${posts.content}"
                      class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
                 <div class="p-6">
                     <!-- Badge and Date -->
@@ -70,11 +88,39 @@
         </div>
 
         <!-- Empty State -->
-        <div th:if="${#lists.isEmpty(posts)}"
+        <div th:if="${#lists.isEmpty(posts.content)}"
              class="flex flex-col items-center justify-center py-20">
             <div class="text-6xl mb-4">📭</div>
             <h2 class="text-xl font-semibold text-gray-700 mb-2">No posts collected yet.</h2>
             <p class="text-gray-500">Check back later for the latest tech blog posts!</p>
+        </div>
+
+        <!-- Pagination -->
+        <div th:if="${posts.totalPages > 1}"
+             class="mt-10 flex justify-center items-center gap-4">
+            <a th:if="${posts.hasPrevious()}"
+               th:href="@{/(page=${posts.number - 1}, blog=${currentBlog})}"
+               class="px-4 py-2 bg-white text-gray-700 rounded-lg shadow-sm hover:bg-gray-100 transition-colors duration-200 font-medium">
+                &larr; Previous
+            </a>
+            <span th:if="${not posts.hasPrevious()}"
+                  class="px-4 py-2 bg-gray-100 text-gray-400 rounded-lg font-medium cursor-not-allowed">
+                &larr; Previous
+            </span>
+
+            <span class="text-sm text-gray-600">
+                Page <span th:text="${posts.number + 1}">1</span> of <span th:text="${posts.totalPages}">10</span>
+            </span>
+
+            <a th:if="${posts.hasNext()}"
+               th:href="@{/(page=${posts.number + 1}, blog=${currentBlog})}"
+               class="px-4 py-2 bg-white text-gray-700 rounded-lg shadow-sm hover:bg-gray-100 transition-colors duration-200 font-medium">
+                Next &rarr;
+            </a>
+            <span th:if="${not posts.hasNext()}"
+                  class="px-4 py-2 bg-gray-100 text-gray-400 rounded-lg font-medium cursor-not-allowed">
+                Next &rarr;
+            </span>
         </div>
     </main>
 
