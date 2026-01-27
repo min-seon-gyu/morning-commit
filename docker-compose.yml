@@ -1,0 +1,88 @@
+services:
+  # 1. Spring Boot Application
+  app:
+    build: .
+    container_name: morningcommit-app
+    ports:
+      - "18080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      # Database Config
+      - DB_URL=jdbc:mysql://mysql:3306/morningcommit?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+      - DB_USERNAME=root
+      - DB_PASSWORD=1234
+      # RabbitMQ Config
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=guest
+      - RABBITMQ_PASSWORD=guest
+      # Mail Config (SMTP)
+      - MAIL_HOST=${MAIL_HOST}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      # OpenAI Config
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - morningcommit-net
+
+  # 2. MySQL 8.0
+  mysql:
+    image: mysql:8.0
+    container_name: morningcommit-db
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234
+      MYSQL_DATABASE: morningcommit
+      TZ: Asia/Seoul
+    ports:
+      - "13306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - morningcommit-net
+
+  # 3. Redis
+  redis:
+    image: redis:alpine
+    container_name: morningcommit-redis
+    ports:
+      - "16379:6379"
+    networks:
+      - morningcommit-net
+
+  # 4. RabbitMQ
+  rabbitmq:
+    image: rabbitmq:management-alpine
+    container_name: morningcommit-mq
+    ports:
+      - "15673:5672"
+      - "25672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - morningcommit-net
+
+networks:
+  morningcommit-net:
+    driver: bridge
+
+volumes:
+  mysql_data:
