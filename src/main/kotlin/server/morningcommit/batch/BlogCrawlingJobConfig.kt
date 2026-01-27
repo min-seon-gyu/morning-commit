@@ -3,15 +3,15 @@ package server.morningcommit.batch
 import com.rometools.rome.io.SyndFeedInput
 import com.rometools.rome.io.XmlReader
 import org.slf4j.LoggerFactory
-import org.springframework.batch.core.job.Job
+import org.springframework.batch.core.Job
+import org.springframework.batch.core.Step
 import org.springframework.batch.core.job.builder.JobBuilder
 import org.springframework.batch.core.repository.JobRepository
-import org.springframework.batch.core.step.Step
 import org.springframework.batch.core.step.builder.StepBuilder
-import org.springframework.batch.infrastructure.item.Chunk
-import org.springframework.batch.infrastructure.item.ItemProcessor
-import org.springframework.batch.infrastructure.item.ItemReader
-import org.springframework.batch.infrastructure.item.ItemWriter
+import org.springframework.batch.item.Chunk
+import org.springframework.batch.item.ItemProcessor
+import org.springframework.batch.item.ItemReader
+import org.springframework.batch.item.ItemWriter
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.dao.DataIntegrityViolationException
@@ -44,12 +44,10 @@ class BlogCrawlingJobConfig(
             .build()
     }
 
-    @Suppress("DEPRECATION")
     @Bean
     fun crawlingStep(): Step {
         return StepBuilder("crawlingStep", jobRepository)
-            .chunk<BlogSource, List<Post>>(1)
-            .transactionManager(transactionManager)
+            .chunk<BlogSource, List<Post>>(1, transactionManager)
             .reader(blogSourceReader())
             .processor(blogSourceProcessor())
             .writer(postListWriter())
@@ -137,7 +135,7 @@ class BlogCrawlingJobConfig(
 
     @Bean
     fun postListWriter(): ItemWriter<List<Post>> {
-        return ItemWriter<List<Post>> { chunk: Chunk<out List<Post>> ->
+        return ItemWriter { chunk: Chunk<out List<Post>> ->
             chunk.items.flatten().forEach { post ->
                 try {
                     postRepository.save(post)
