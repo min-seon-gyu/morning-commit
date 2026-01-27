@@ -16,13 +16,9 @@ class JobScheduler(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    @Scheduled(cron = "0 0 7 * * *")
-    fun runDailyNewsletter() {
-        log.info("=== Starting Daily Newsletter Job ===")
-
+    @Scheduled(cron = "0 0 1 * * *")
+    fun runCrawlingJob() {
         try {
-            // Step 1: Run blog crawling job
-            log.info("Starting blogCrawlingJob...")
             val crawlingParams = JobParametersBuilder()
                 .addLong("timestamp", System.currentTimeMillis())
                 .toJobParameters()
@@ -30,13 +26,20 @@ class JobScheduler(
             val crawlingExecution = jobLauncher.run(blogCrawlingJob, crawlingParams)
 
             if (crawlingExecution.status.isUnsuccessful) {
-                log.error("blogCrawlingJob failed. Skipping email delivery.")
+                log.error("blogCrawlingJob failed.")
+
                 return
             }
-            log.info("blogCrawlingJob completed successfully.")
 
-            // Step 2: Run email delivery job
-            log.info("Starting emailDeliveryJob...")
+            log.info("=== Blog Crawling Job Completed ===")
+        } catch (e: Exception) {
+            log.error("Blog crawling job failed: ${e.message}", e)
+        }
+    }
+
+    @Scheduled(cron = "0 0 7 * * *")
+    fun runEmailDeliveryJob() {
+        try {
             val deliveryParams = JobParametersBuilder()
                 .addLong("timestamp", System.currentTimeMillis())
                 .toJobParameters()
@@ -45,13 +48,13 @@ class JobScheduler(
 
             if (deliveryExecution.status.isUnsuccessful) {
                 log.error("emailDeliveryJob failed.")
+
                 return
             }
-            log.info("emailDeliveryJob completed successfully.")
 
-            log.info("=== Daily Newsletter Job Completed ===")
+            log.info("=== Email Delivery Job Completed ===")
         } catch (e: Exception) {
-            log.error("Daily newsletter job failed: ${e.message}", e)
+            log.error("Email delivery job failed: ${e.message}", e)
         }
     }
 }
