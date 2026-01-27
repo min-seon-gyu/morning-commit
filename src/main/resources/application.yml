@@ -19,11 +19,6 @@ spring:
     properties:
       hibernate:
         format_sql: true
-    defer-datasource-initialization: true
-
-  sql:
-    init:
-      mode: always
 
   # ==========================================
   # 2. Redis 설정 (추가됨)
