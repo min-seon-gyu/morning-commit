@@ -15,10 +15,10 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
 
   # ==========================================
   # 2. Redis 설정 (추가됨)
