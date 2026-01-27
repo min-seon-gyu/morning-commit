@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MorningCommit Newsletter</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #007bff;
+            margin: 0;
+            font-size: 28px;
+        }
+        .header p {
+            color: #666;
+            margin: 10px 0 0 0;
+            font-size: 14px;
+        }
+        .post {
+            margin-bottom: 25px;
+            padding-bottom: 25px;
+            border-bottom: 1px solid #eee;
+        }
+        .post:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .post-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin: 0 0 10px 0;
+        }
+        .post-title a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .post-title a:hover {
+            text-decoration: underline;
+        }
+        .post-meta {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 10px;
+        }
+        .post-summary {
+            font-size: 14px;
+            color: #555;
+            white-space: pre-line;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            font-size: 12px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>MorningCommit</h1>
+            <p>Today's Tech Blog Digest</p>
+        </div>
+
+        <div th:each="post : ${posts}" class="post">
+            <h2 class="post-title">
+                <a th:href="${post.link}" th:text="${post.title}" target="_blank">Post Title</a>
+            </h2>
+            <div class="post-meta">
+                <span th:text="${post.blogName}">Blog Name</span>
+                <span th:if="${post.publishDate}">
+                    &middot; <span th:text="${#temporals.format(post.publishDate, 'yyyy-MM-dd')}">2024-01-01</span>
+                </span>
+            </div>
+            <div class="post-summary" th:text="${post.description}">
+                Summary content here...
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>You received this email because you subscribed to MorningCommit.</p>
+            <p>Copyright MorningCommit. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
