@@ -78,6 +78,7 @@ class EmailDeliveryJobConfig(
             log.info("Creating email request for ${subscriber.email} with ${postIds.size} posts")
 
             EmailRequest(
+                subscriberId = subscriber.id!!,
                 email = subscriber.email,
                 postIds = postIds
             )

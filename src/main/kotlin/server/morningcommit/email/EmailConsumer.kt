@@ -26,7 +26,7 @@ class EmailConsumer(
                 return
             }
 
-            emailService.sendNewsletter(request.email, posts)
+            emailService.sendNewsletter(request.email, posts, request.subscriberId)
             log.info("Successfully processed email request for: ${request.email}")
         } catch (e: Exception) {
             log.error("Failed to process email request for ${request.email}: ${e.message}", e)

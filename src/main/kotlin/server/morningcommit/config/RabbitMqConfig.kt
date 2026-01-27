@@ -18,6 +18,9 @@ class RabbitMqConfig {
         const val QUEUE_NAME = "email-queue"
         const val EXCHANGE_NAME = "email-exchange"
         const val ROUTING_KEY = "send-email"
+
+        const val TRACKING_QUEUE_NAME = "tracking-queue"
+        const val TRACKING_ROUTING_KEY = "tracking-log"
     }
 
     @Bean
@@ -36,6 +39,19 @@ class RabbitMqConfig {
             .bind(emailQueue)
             .to(emailExchange)
             .with(ROUTING_KEY)
+    }
+
+    @Bean
+    fun trackingQueue(): Queue {
+        return Queue(TRACKING_QUEUE_NAME, true)
+    }
+
+    @Bean
+    fun trackingBinding(trackingQueue: Queue, emailExchange: DirectExchange): Binding {
+        return BindingBuilder
+            .bind(trackingQueue)
+            .to(emailExchange)
+            .with(TRACKING_ROUTING_KEY)
     }
 
     @Bean
