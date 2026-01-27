@@ -63,6 +63,7 @@ class BlogCrawlingJobConfig(
             if (!initialized) {
                 sources.addAll(blogSourceRepository.findByIsActiveTrue())
                 initialized = true
+
                 log.info("Loaded ${sources.size} active blog sources")
             }
             sources.removeFirstOrNull()
@@ -71,7 +72,7 @@ class BlogCrawlingJobConfig(
 
     @Bean
     fun blogSourceProcessor(): ItemProcessor<BlogSource, List<Post>> {
-        val sevenDaysAgo = LocalDateTime.now().minusDays(7)
+        val threeMonthAgo = LocalDateTime.now().minusMonths(3)
 
         return ItemProcessor<BlogSource, List<Post>> { blogSource ->
             log.info("Processing blog: ${blogSource.blog.displayName}")
@@ -87,7 +88,7 @@ class BlogCrawlingJobConfig(
                         val publishDate = entry.publishedDate?.toInstant()
                             ?.atZone(ZoneId.systemDefault())
                             ?.toLocalDateTime()
-                        publishDate != null && publishDate.isAfter(sevenDaysAgo)
+                        publishDate != null && publishDate.isAfter(threeMonthAgo)
                     }
                     .mapNotNull { entry ->
                         try {
@@ -95,6 +96,7 @@ class BlogCrawlingJobConfig(
 
                             if (postRepository.existsByLink(link)) {
                                 log.debug("Skipping existing post: $link")
+
                                 return@mapNotNull null
                             }
 
@@ -102,6 +104,7 @@ class BlogCrawlingJobConfig(
                                 htmlScraper.scrapeContent(link)
                             } catch (e: Exception) {
                                 log.warn("Failed to scrape content from $link: ${e.message}")
+
                                 entry.description?.value ?: ""
                             }
 
@@ -112,14 +115,12 @@ class BlogCrawlingJobConfig(
                                 ?.toLocalDateTime()
 
                             Post(
-                                title = entry.title ?: "Untitled",
-                                link = link,
-                                description = summary,
-                                publishDate = publishDate,
-                                blog = blogSource.blog
+                                title = entry.title ?: "Untitled", link = link, description = summary,
+                                publishDate = publishDate, blog = blogSource.blog
                             )
                         } catch (e: Exception) {
                             log.error("Failed to process entry: ${entry.title}", e)
+
                             null
                         }
                     }
@@ -128,6 +129,7 @@ class BlogCrawlingJobConfig(
                     }
             } catch (e: Exception) {
                 log.error("Failed to process blog source: ${blogSource.blog.displayName}", e)
+
                 emptyList()
             }
         }
@@ -139,11 +141,11 @@ class BlogCrawlingJobConfig(
             chunk.items.flatten().forEach { post ->
                 try {
                     postRepository.save(post)
-                    log.info("Saved post: ${post.title}")
                 } catch (e: DataIntegrityViolationException) {
                     log.warn("Duplicate post skipped: ${post.link}")
                 }
             }
+            log.info("Saved post")
         }
     }
 }
