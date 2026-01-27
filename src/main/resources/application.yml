@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${db.url:jdbc:mysql://localhost:3306/morningcommit}
+    username: ${db.username:root}
+    password: ${db.password:1234}
+    hikari:
+      maximum-pool-size: 2
+      minimum-idle: 1
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        hibernate.jdbc.fetch_size: 100 # Stream ?? ???
+        default_batch_fetch_size: 100 # ??? ???? ??? ??? ?? ???
+        jdbc.batch_size: 100 # Update, Insert ? ?? ???
+        order_updates: true
+      jakarta:
+        persistence:
+          validation:
+            mode: none
+    show-sql: false
+    open-in-view: false
