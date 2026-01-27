@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Morning Commit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">
+                Morning Commit
+            </h1>
+            <p class="mt-1 text-sm text-gray-500">Daily Tech Blog Newsletter</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Posts Grid -->
+        <div th:if="${not #lists.isEmpty(posts)}"
+             class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            <!-- Post Card -->
+            <article th:each="post : ${posts}"
+                     class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                <div class="p-6">
+                    <!-- Badge and Date -->
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="inline-block px-3 py-1 text-xs font-medium text-white bg-indigo-500 rounded-full"
+                              th:text="${post.blogName}">Blog Name</span>
+                        <time class="text-sm text-gray-400"
+                              th:text="${#temporals.format(post.publishDate, 'yyyy-MM-dd')}">2024-01-01</time>
+                    </div>
+
+                    <!-- Title -->
+                    <h2 class="mb-4">
+                        <a th:href="${post.link}"
+                           th:text="${post.title}"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           class="text-lg font-bold text-gray-900 hover:text-indigo-600 transition-colors duration-200 line-clamp-2">
+                            Post Title
+                        </a>
+                    </h2>
+
+                    <!-- AI Summary -->
+                    <div class="bg-gray-100 rounded-lg p-4">
+                        <div class="flex items-center gap-1 mb-2">
+                            <span class="text-sm">🤖</span>
+                            <span class="text-xs font-medium text-gray-500">AI Summary</span>
+                        </div>
+                        <p th:text="${post.description}"
+                           class="text-sm text-gray-600 leading-relaxed line-clamp-4">
+                            Post description goes here...
+                        </p>
+                    </div>
+                </div>
+            </article>
+        </div>
+
+        <!-- Empty State -->
+        <div th:if="${#lists.isEmpty(posts)}"
+             class="flex flex-col items-center justify-center py-20">
+            <div class="text-6xl mb-4">📭</div>
+            <h2 class="text-xl font-semibold text-gray-700 mb-2">No posts collected yet.</h2>
+            <p class="text-gray-500">Check back later for the latest tech blog posts!</p>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-sm text-gray-500">
+            <p>Morning Commit - Your Daily Tech Newsletter</p>
+        </div>
+    </footer>
+</body>
+</html>
