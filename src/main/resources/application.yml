@@ -25,3 +25,15 @@ spring:
 
 openai:
   api-key: ${OPENAI_API_KEY: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}
+
+spring.mail:
+  host: ${MAIL_HOST:smtp.naver.com}
+  port: ${MAIL_PORT:465}
+  username: ${MAIL_USERNAME:gcael@naver.com}
+  password: ${MAIL_PASSWORD:FEJD5921QSFH}
+  properties:
+    mail:
+      smtp:
+        auth: true
+        starttls:
+          enable: true
