@@ -5,6 +5,7 @@ import com.rometools.rome.io.XmlReader
 import org.slf4j.LoggerFactory
 import org.springframework.batch.core.Job
 import org.springframework.batch.core.Step
+import org.springframework.batch.core.configuration.annotation.StepScope
 import org.springframework.batch.core.job.builder.JobBuilder
 import org.springframework.batch.core.repository.JobRepository
 import org.springframework.batch.core.step.builder.StepBuilder
@@ -55,6 +56,7 @@ class BlogCrawlingJobConfig(
     }
 
     @Bean
+    @StepScope
     fun blogSourceReader(): ItemReader<BlogSource> {
         val sources = mutableListOf<BlogSource>()
         var initialized = false
@@ -85,9 +87,11 @@ class BlogCrawlingJobConfig(
 
                 feed.entries
                     .filter { entry ->
-                        val publishDate = entry.publishedDate?.toInstant()
+                        val rawDate = entry.publishedDate ?: entry.updatedDate
+                        val publishDate = rawDate?.toInstant()
                             ?.atZone(ZoneId.systemDefault())
                             ?.toLocalDateTime()
+
                         publishDate != null && publishDate.isAfter(threeMonthAgo)
                     }
                     .mapNotNull { entry ->
@@ -95,8 +99,6 @@ class BlogCrawlingJobConfig(
                             val link = entry.link ?: return@mapNotNull null
 
                             if (postRepository.existsByLink(link)) {
-                                log.debug("Skipping existing post: $link")
-
                                 return@mapNotNull null
                             }
 
@@ -110,7 +112,8 @@ class BlogCrawlingJobConfig(
 
                             val summary = summaryService.summarize(fullContent)
 
-                            val publishDate = entry.publishedDate?.toInstant()
+                            val rawDate = entry.publishedDate ?: entry.updatedDate
+                            val publishDate = rawDate?.toInstant()
                                 ?.atZone(ZoneId.systemDefault())
                                 ?.toLocalDateTime()
 
