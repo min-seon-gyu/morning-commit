@@ -3,25 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Morning Commit</title>
+    <title>MorningCommit</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Noto Sans KR', sans-serif;
         }
+        .pagination-btn {
+            position: relative;
+            overflow: hidden;
+        }
+        .pagination-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+        .pagination-btn:hover::before {
+            left: 100%;
+        }
+        .page-number {
+            transition: all 0.3s ease;
+        }
+        .page-number:hover:not(.active):not(.disabled) {
+            transform: translateY(-2px);
+        }
+        .page-number.active {
+            box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.4);
+        }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
     <!-- Header -->
-    <header class="bg-white shadow-sm sticky top-0 z-10">
+    <header class="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-10 border-b border-slate-200/50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">
-                Morning Commit
-            </h1>
-            <p class="mt-1 text-sm text-gray-500">Daily Tech Blog Newsletter</p>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                    <span class="text-white font-bold text-lg">M</span>
+                </div>
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-1 pb-1">
+                        MorningCommit
+                    </h1>
+                    <p class="text-sm text-slate-500">매일 아침, 기술 아티클</p>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -31,15 +64,15 @@
         <div class="mb-8 overflow-x-auto">
             <div class="flex gap-2 pb-2 min-w-max">
                 <a th:href="@{/}"
-                   th:classappend="${currentBlog == null} ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'"
-                   class="px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 shadow-sm whitespace-nowrap">
-                    All
+                   th:classappend="${currentBlog == null} ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/30' : 'bg-white text-slate-700 hover:bg-slate-50 hover:shadow-md'"
+                   class="px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 whitespace-nowrap">
+                    전체
                 </a>
                 <a th:each="blog : ${blogs}"
                    th:href="@{/(blog=${blog})}"
                    th:text="${blog.displayName}"
-                   th:classappend="${blog == currentBlog} ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'"
-                   class="px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 shadow-sm whitespace-nowrap">
+                   th:classappend="${blog == currentBlog} ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/30' : 'bg-white text-slate-700 hover:bg-slate-50 hover:shadow-md'"
+                   class="px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 shadow-sm whitespace-nowrap">
                     Blog Name
                 </a>
             </div>
@@ -51,14 +84,14 @@
 
             <!-- Post Card -->
             <article th:each="post : ${posts.content}"
-                     class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                     class="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 hover:border-indigo-100">
                 <div class="p-6">
                     <!-- Badge and Date -->
-                    <div class="flex items-center justify-between mb-3">
-                        <span class="inline-block px-3 py-1 text-xs font-medium text-white bg-indigo-500 rounded-full"
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 rounded-full ring-1 ring-indigo-100"
                               th:text="${post.blog.displayName}">Blog Name</span>
-                        <time class="text-sm text-gray-400"
-                              th:text="${#temporals.format(post.publishDate, 'yyyy-MM-dd')}">2024-01-01</time>
+                        <time class="text-sm text-slate-400 font-medium"
+                              th:text="${#temporals.format(post.publishDate, 'yyyy.MM.dd')}">2024.01.01</time>
                     </div>
 
                     <!-- Title -->
@@ -67,19 +100,23 @@
                            th:text="${post.title}"
                            target="_blank"
                            rel="noopener noreferrer"
-                           class="text-lg font-bold text-gray-900 hover:text-indigo-600 transition-colors duration-200 line-clamp-2">
+                           class="text-lg font-bold text-slate-900 hover:text-indigo-600 transition-colors duration-200 line-clamp-2 leading-snug">
                             Post Title
                         </a>
                     </h2>
 
                     <!-- AI Summary -->
-                    <div class="bg-gray-100 rounded-lg p-4">
-                        <div class="flex items-center gap-1 mb-2">
-                            <span class="text-sm">🤖</span>
-                            <span class="text-xs font-medium text-gray-500">AI Summary</span>
+                    <div class="bg-gradient-to-br from-slate-50 to-slate-100/50 rounded-xl p-4 border border-slate-100">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-5 h-5 rounded-md bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+                                <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z"/>
+                                </svg>
+                            </div>
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">AI 요약</span>
                         </div>
                         <p th:text="${post.description}"
-                           class="text-sm text-gray-600 leading-relaxed line-clamp-4">
+                           class="text-sm text-slate-600 leading-relaxed line-clamp-4">
                             Post description goes here...
                         </p>
                     </div>
@@ -90,44 +127,173 @@
         <!-- Empty State -->
         <div th:if="${#lists.isEmpty(posts.content)}"
              class="flex flex-col items-center justify-center py-20">
-            <div class="text-6xl mb-4">📭</div>
-            <h2 class="text-xl font-semibold text-gray-700 mb-2">No posts collected yet.</h2>
-            <p class="text-gray-500">Check back later for the latest tech blog posts!</p>
+            <div class="w-24 h-24 bg-gradient-to-br from-slate-100 to-slate-200 rounded-full flex items-center justify-center mb-6">
+                <svg class="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                </svg>
+            </div>
+            <h2 class="text-xl font-bold text-slate-700 mb-2">아직 수집된 포스트가 없습니다</h2>
+            <p class="text-slate-500">잠시 후 다시 확인해 주세요!</p>
         </div>
 
-        <!-- Pagination -->
+        <!-- Premium Pagination -->
         <div th:if="${posts.totalPages > 1}"
-             class="mt-10 flex justify-center items-center gap-4">
-            <a th:if="${posts.hasPrevious()}"
-               th:href="@{/(page=${posts.number - 1}, blog=${currentBlog})}"
-               class="px-4 py-2 bg-white text-gray-700 rounded-lg shadow-sm hover:bg-gray-100 transition-colors duration-200 font-medium">
-                &larr; Previous
-            </a>
-            <span th:if="${not posts.hasPrevious()}"
-                  class="px-4 py-2 bg-gray-100 text-gray-400 rounded-lg font-medium cursor-not-allowed">
-                &larr; Previous
-            </span>
+             class="mt-12 flex flex-col items-center gap-4 px-4">
 
-            <span class="text-sm text-gray-600">
-                Page <span th:text="${posts.number + 1}">1</span> of <span th:text="${posts.totalPages}">10</span>
-            </span>
+            <!-- Page Info -->
+            <div class="text-sm text-slate-500 font-medium text-center">
+                전체 <span class="text-indigo-600 font-bold" th:text="${posts.totalElements}">100</span>개 중
+                <span class="text-slate-700 font-semibold" th:text="${posts.number * posts.size + 1}">1</span> -
+                <span class="text-slate-700 font-semibold" th:text="${posts.number * posts.size + posts.numberOfElements}">9</span>
+            </div>
 
-            <a th:if="${posts.hasNext()}"
-               th:href="@{/(page=${posts.number + 1}, blog=${currentBlog})}"
-               class="px-4 py-2 bg-white text-gray-700 rounded-lg shadow-sm hover:bg-gray-100 transition-colors duration-200 font-medium">
-                Next &rarr;
-            </a>
-            <span th:if="${not posts.hasNext()}"
-                  class="px-4 py-2 bg-gray-100 text-gray-400 rounded-lg font-medium cursor-not-allowed">
-                Next &rarr;
-            </span>
+            <!-- Mobile Pagination (shown on small screens) -->
+            <div class="flex sm:hidden items-center justify-center gap-3 w-full">
+                <!-- Previous Button (Mobile) -->
+                <a th:if="${posts.hasPrevious()}"
+                   th:href="@{/(page=${posts.number - 1}, blog=${currentBlog})}"
+                   class="flex items-center justify-center w-12 h-12 bg-white text-slate-700 rounded-xl shadow-sm border border-slate-200 hover:border-indigo-200 hover:text-indigo-600 transition-all duration-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </a>
+                <span th:if="${not posts.hasPrevious()}"
+                      class="flex items-center justify-center w-12 h-12 bg-slate-50 text-slate-300 rounded-xl border border-slate-100 cursor-not-allowed">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </span>
+
+                <!-- Current Page Indicator (Mobile) -->
+                <div class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl text-white font-bold shadow-lg shadow-indigo-500/30">
+                    <span th:text="${posts.number + 1}">1</span>
+                    <span class="text-indigo-200">/</span>
+                    <span th:text="${posts.totalPages}">10</span>
+                </div>
+
+                <!-- Next Button (Mobile) -->
+                <a th:if="${posts.hasNext()}"
+                   th:href="@{/(page=${posts.number + 1}, blog=${currentBlog})}"
+                   class="flex items-center justify-center w-12 h-12 bg-white text-slate-700 rounded-xl shadow-sm border border-slate-200 hover:border-indigo-200 hover:text-indigo-600 transition-all duration-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </a>
+                <span th:if="${not posts.hasNext()}"
+                      class="flex items-center justify-center w-12 h-12 bg-slate-50 text-slate-300 rounded-xl border border-slate-100 cursor-not-allowed">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </span>
+            </div>
+
+            <!-- Desktop Pagination (hidden on small screens) -->
+            <div class="hidden sm:flex items-center gap-2 flex-wrap justify-center">
+                <!-- First Page -->
+                <a th:if="${posts.number > 1}"
+                   th:href="@{/(page=0, blog=${currentBlog})}"
+                   class="page-number w-10 h-10 flex items-center justify-center rounded-xl bg-white text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all duration-200 shadow-sm border border-slate-200 hover:border-indigo-200">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+                    </svg>
+                </a>
+
+                <!-- Previous Button -->
+                <a th:if="${posts.hasPrevious()}"
+                   th:href="@{/(page=${posts.number - 1}, blog=${currentBlog})}"
+                   class="pagination-btn flex items-center gap-2 px-4 py-2.5 bg-white text-slate-700 rounded-xl shadow-sm hover:shadow-md border border-slate-200 hover:border-indigo-200 hover:text-indigo-600 transition-all duration-300 font-semibold">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    <span class="hidden md:inline">이전</span>
+                </a>
+                <span th:if="${not posts.hasPrevious()}"
+                      class="flex items-center gap-2 px-4 py-2.5 bg-slate-50 text-slate-300 rounded-xl font-semibold cursor-not-allowed border border-slate-100">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    <span class="hidden md:inline">이전</span>
+                </span>
+
+                <!-- Page Numbers -->
+                <div class="flex items-center gap-1 mx-1 md:mx-2">
+                    <th:block th:with="startPage=${posts.number > 2 ? posts.number - 2 : 0}, endPage=${posts.number + 2 < posts.totalPages ? posts.number + 2 : posts.totalPages - 1}">
+                        <!-- Show first page if not in range -->
+                        <a th:if="${startPage > 0}"
+                           th:href="@{/(page=0, blog=${currentBlog})}"
+                           class="page-number w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-xl bg-white text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all duration-200 shadow-sm border border-slate-200 hover:border-indigo-200 font-semibold text-sm">
+                            1
+                        </a>
+                        <span th:if="${startPage > 1}" class="px-1 text-slate-400">...</span>
+
+                        <!-- Page number buttons -->
+                        <th:block th:each="pageNum : ${#numbers.sequence(startPage, endPage)}">
+                            <a th:if="${pageNum != posts.number}"
+                               th:href="@{/(page=${pageNum}, blog=${currentBlog})}"
+                               th:text="${pageNum + 1}"
+                               class="page-number w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-xl bg-white text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all duration-200 shadow-sm border border-slate-200 hover:border-indigo-200 font-semibold text-sm">
+                                1
+                            </a>
+                            <span th:if="${pageNum == posts.number}"
+                                  th:text="${pageNum + 1}"
+                                  class="page-number active w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold text-sm">
+                                1
+                            </span>
+                        </th:block>
+
+                        <!-- Show last page if not in range -->
+                        <span th:if="${endPage < posts.totalPages - 2}" class="px-1 text-slate-400">...</span>
+                        <a th:if="${endPage < posts.totalPages - 1}"
+                           th:href="@{/(page=${posts.totalPages - 1}, blog=${currentBlog})}"
+                           th:text="${posts.totalPages}"
+                           class="page-number w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-xl bg-white text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all duration-200 shadow-sm border border-slate-200 hover:border-indigo-200 font-semibold text-sm">
+                            10
+                        </a>
+                    </th:block>
+                </div>
+
+                <!-- Next Button -->
+                <a th:if="${posts.hasNext()}"
+                   th:href="@{/(page=${posts.number + 1}, blog=${currentBlog})}"
+                   class="pagination-btn flex items-center gap-2 px-4 py-2.5 bg-white text-slate-700 rounded-xl shadow-sm hover:shadow-md border border-slate-200 hover:border-indigo-200 hover:text-indigo-600 transition-all duration-300 font-semibold">
+                    <span class="hidden md:inline">다음</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </a>
+                <span th:if="${not posts.hasNext()}"
+                      class="flex items-center gap-2 px-4 py-2.5 bg-slate-50 text-slate-300 rounded-xl font-semibold cursor-not-allowed border border-slate-100">
+                    <span class="hidden md:inline">다음</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </span>
+
+                <!-- Last Page -->
+                <a th:if="${posts.number < posts.totalPages - 2}"
+                   th:href="@{/(page=${posts.totalPages - 1}, blog=${currentBlog})}"
+                   class="page-number w-10 h-10 flex items-center justify-center rounded-xl bg-white text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all duration-200 shadow-sm border border-slate-200 hover:border-indigo-200">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+                    </svg>
+                </a>
+            </div>
         </div>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white border-t mt-auto">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-sm text-gray-500">
-            <p>Morning Commit - Your Daily Tech Newsletter</p>
+    <footer class="bg-white/80 backdrop-blur-md border-t border-slate-200/50 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex flex-col items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-sm">M</span>
+                    </div>
+                    <span class="font-bold text-slate-700">MorningCommit</span>
+                </div>
+                <p class="text-sm text-slate-500">매일 아침, 개발자를 위한 기술 뉴스레터</p>
+                <p class="text-xs text-slate-400">&copy; 2025 MorningCommit. All rights reserved.</p>
+            </div>
         </div>
     </footer>
 </body>
