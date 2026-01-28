@@ -57,13 +57,19 @@ blogCrawlingJob (Daily at 1 AM)
 emailDeliveryJob (Daily at 7 AM)
     │
     ├─► Read active Subscriber entities
-    ├─► Get today's Post IDs
+    ├─► Shuffle-and-Deplete Post Selection:
+    │       ├─► Fetch all Post IDs
+    │       ├─► Get sent Post IDs from PostSendHistory
+    │       ├─► Calculate candidates (all - sent)
+    │       ├─► If empty: Reset history, use all posts
+    │       ├─► Random select one post
+    │       └─► Save to PostSendHistory
     └─► Publish EmailRequest to RabbitMQ
             │
             └─► EmailConsumer (async)
-                    ├─► Fetch Posts from DB
+                    ├─► Fetch Post from DB
                     ├─► Transform links to tracking URLs
-                    ├─► Render Thymeleaf template
+                    ├─► Render Thymeleaf template (Korean)
                     └─► Send via SMTP
 
 Click Tracking Flow
@@ -82,7 +88,7 @@ Click Tracking Flow
 
 ```
 server.morningcommit
-├── domain/           # JPA Entities (BlogSource, Post, Subscriber, ClickLog, BaseEntity)
+├── domain/           # JPA Entities (BlogSource, Post, Subscriber, ClickLog, PostSendHistory, BaseEntity)
 ├── repository/       # Spring Data JPA Repositories
 ├── batch/            # Spring Batch Jobs (BlogCrawlingJob, EmailDeliveryJob)
 ├── scheduler/        # @Scheduled job orchestration
@@ -123,7 +129,16 @@ server.morningcommit
 
 ### Batch Jobs
 - **blogCrawlingJob**: Crawls RSS, scrapes content, summarizes, saves to DB
-- **emailDeliveryJob**: Reads subscribers, creates EmailRequests, publishes to RabbitMQ
+- **emailDeliveryJob**: Reads subscribers, selects random post (shuffle-and-deplete), publishes to RabbitMQ
+
+### Shuffle-and-Deplete Algorithm
+Each subscriber receives one random post per day without duplicates until all posts are sent:
+1. Fetch all Post IDs from database
+2. Get already-sent Post IDs for user from `PostSendHistory`
+3. Calculate candidates = all IDs - sent IDs
+4. If candidates empty → delete user's history (reset cycle) → use all posts
+5. Randomly select one post from candidates
+6. Save selection to `PostSendHistory`
 
 ### RabbitMQ
 - Exchange: `email-exchange` (Direct)

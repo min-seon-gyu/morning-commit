@@ -39,13 +39,19 @@ blogCrawlingJob (매일 오전 1시 실행)
 emailDeliveryJob (매일 오전 7시 실행)
     │
     ├─► 활성화된 Subscriber 엔티티 조회
-    ├─► 오늘 수집된 Post ID 조회
+    ├─► Shuffle-and-Deplete 포스트 선택:
+    │       ├─► 전체 Post ID 조회
+    │       ├─► PostSendHistory에서 발송 완료된 Post ID 조회
+    │       ├─► 후보 목록 계산 (전체 - 발송완료)
+    │       ├─► 후보 없으면: 히스토리 초기화, 전체 사용
+    │       ├─► 후보 중 랜덤 1개 선택
+    │       └─► PostSendHistory에 저장
     └─► EmailRequest를 RabbitMQ에 발행
             │
             └─► EmailConsumer (비동기 처리)
                     ├─► DB에서 Post 조회
                     ├─► 링크를 트래킹 URL로 변환
-                    ├─► Thymeleaf 템플릿 렌더링
+                    ├─► Thymeleaf 템플릿 렌더링 (한국어)
                     └─► SMTP를 통한 이메일 발송
 
 클릭 트래킹 흐름
@@ -64,7 +70,7 @@ emailDeliveryJob (매일 오전 7시 실행)
 
 ```
 server.morningcommit
-├── domain/           # JPA 엔티티 (BlogSource, Post, Subscriber, ClickLog, BaseEntity)
+├── domain/           # JPA 엔티티 (BlogSource, Post, Subscriber, ClickLog, PostSendHistory, BaseEntity)
 ├── repository/       # Spring Data JPA Repository
 ├── batch/            # Spring Batch Job (BlogCrawlingJob, EmailDeliveryJob)
 ├── scheduler/        # @Scheduled 작업 오케스트레이션
@@ -110,3 +116,14 @@ server.morningcommit
 - `GET /track?url={encodedUrl}&subscriberId={id}` - 클릭 추적 후 원본 URL로 리다이렉트 (302)
 - 뉴스레터 이메일의 링크가 트래킹 URL로 변환되어 발송
 - 클릭 이벤트는 `ClickLog` 엔티티에 저장되어 분석에 활용
+
+## Shuffle-and-Deplete 알고리즘
+
+구독자에게 중복 없이 매일 하나의 랜덤 포스트를 발송하는 로직:
+
+1. 전체 Post ID 조회
+2. `PostSendHistory`에서 해당 사용자에게 발송된 Post ID 조회
+3. 후보 목록 계산 (전체 ID - 발송 완료 ID)
+4. 후보가 없으면 (사이클 완료) → 히스토리 초기화 후 전체 사용
+5. 후보 중 랜덤으로 1개 선택
+6. `PostSendHistory`에 저장 후 이메일 발송
