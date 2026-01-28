@@ -33,7 +33,7 @@ class EmailService(
             MimeMessageHelper(message, true, "UTF-8").apply {
                 setFrom(from)
                 setTo(to)
-                setSubject("[MorningCommit] Today's Tech Blog Digest")
+                setSubject("[MorningCommit] 오늘의 기술 블로그 다이제스트")
                 setText(htmlContent, true)
             }
 
