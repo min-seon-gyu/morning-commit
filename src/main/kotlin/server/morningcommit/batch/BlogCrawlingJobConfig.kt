@@ -65,8 +65,6 @@ class BlogCrawlingJobConfig(
             if (!initialized) {
                 sources.addAll(blogSourceRepository.findByIsActiveTrue())
                 initialized = true
-
-                log.info("Loaded ${sources.size} active blog sources")
             }
             sources.removeFirstOrNull()
         }
@@ -74,7 +72,7 @@ class BlogCrawlingJobConfig(
 
     @Bean
     fun blogSourceProcessor(): ItemProcessor<BlogSource, List<Post>> {
-        val threeMonthAgo = LocalDateTime.now().minusMonths(3)
+        val base = LocalDateTime.now().minusDays(3)
 
         return ItemProcessor<BlogSource, List<Post>> { blogSource ->
             log.info("Processing blog: ${blogSource.blog.displayName}")
@@ -92,7 +90,7 @@ class BlogCrawlingJobConfig(
                             ?.atZone(ZoneId.systemDefault())
                             ?.toLocalDateTime()
 
-                        publishDate != null && publishDate.isAfter(threeMonthAgo)
+                        publishDate != null && publishDate.isAfter(base)
                     }
                     .mapNotNull { entry ->
                         try {

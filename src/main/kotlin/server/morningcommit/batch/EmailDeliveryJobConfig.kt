@@ -3,6 +3,7 @@ package server.morningcommit.batch
 import org.slf4j.LoggerFactory
 import org.springframework.batch.core.Job
 import org.springframework.batch.core.Step
+import org.springframework.batch.core.configuration.annotation.StepScope
 import org.springframework.batch.core.job.builder.JobBuilder
 import org.springframework.batch.core.repository.JobRepository
 import org.springframework.batch.core.step.builder.StepBuilder
@@ -49,6 +50,7 @@ class EmailDeliveryJobConfig(
     }
 
     @Bean
+    @StepScope
     fun subscriberReader(): ItemReader<Subscriber> {
         val subscribers = mutableListOf<Subscriber>()
         var initialized = false
@@ -57,7 +59,6 @@ class EmailDeliveryJobConfig(
             if (!initialized) {
                 subscribers.addAll(subscriberRepository.findByIsActiveTrue())
                 initialized = true
-                log.info("Loaded ${subscribers.size} active subscribers")
             }
             subscribers.removeFirstOrNull()
         }
