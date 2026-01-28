@@ -18,7 +18,8 @@ class EmailService(
     private val mailSender: JavaMailSender,
     private val templateEngine: TemplateEngine,
     @Value("\${app.tracking.base-url:http://localhost:18080/track}")
-    private val trackingBaseUrl: String
+    private val trackingBaseUrl: String,
+    @Value("\${mail.username:}") private val from: String
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -29,6 +30,7 @@ class EmailService(
             val message: MimeMessage = mailSender.createMimeMessage()
 
             MimeMessageHelper(message, true, "UTF-8").apply {
+                setFrom(from)
                 setTo(to)
                 setSubject("[MorningCommit] Today's Tech Blog Digest")
                 setText(htmlContent, true)
