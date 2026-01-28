@@ -13,14 +13,13 @@ import org.springframework.batch.item.ItemWriter
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.transaction.PlatformTransactionManager
+import server.morningcommit.domain.PostSendHistory
 import server.morningcommit.domain.Subscriber
 import server.morningcommit.email.EmailProducer
 import server.morningcommit.email.dto.EmailRequest
 import server.morningcommit.repository.PostRepository
+import server.morningcommit.repository.PostSendHistoryRepository
 import server.morningcommit.repository.SubscriberRepository
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.LocalTime
 
 @Configuration
 class EmailDeliveryJobConfig(
@@ -28,6 +27,7 @@ class EmailDeliveryJobConfig(
     private val transactionManager: PlatformTransactionManager,
     private val subscriberRepository: SubscriberRepository,
     private val postRepository: PostRepository,
+    private val postSendHistoryRepository: PostSendHistoryRepository,
     private val emailProducer: EmailProducer
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -67,22 +67,30 @@ class EmailDeliveryJobConfig(
     @Bean
     fun subscriberToEmailRequestProcessor(): ItemProcessor<Subscriber, EmailRequest> {
         return ItemProcessor { subscriber ->
-            val startOfDay = LocalDateTime.of(LocalDate.now(), LocalTime.MIN)
-            val todayPosts = postRepository.findTodayPosts(startOfDay)
+            val userId = subscriber.id!!
 
-            if (todayPosts.isEmpty()) {
-                log.info("No posts collected today. Skipping email for: ${subscriber.email}")
+            val allPostIds = postRepository.findAll().mapNotNull { it.id }
+
+            if (allPostIds.isEmpty()) {
+                log.info("No posts available. Skipping email for: ${subscriber.email}")
+
                 return@ItemProcessor null
             }
 
-            val postIds = todayPosts.mapNotNull { it.id }
-            log.info("Creating email request for ${subscriber.email} with ${postIds.size} posts")
+            val sentPostIds = postSendHistoryRepository.findSentPostIdsByUserId(userId).toSet()
 
-            EmailRequest(
-                subscriberId = subscriber.id!!,
-                email = subscriber.email,
-                postIds = postIds
-            )
+            var candidates = allPostIds.filter { it !in sentPostIds }
+
+            if (candidates.isEmpty()) {
+                postSendHistoryRepository.deleteByUserId(userId)
+                candidates = allPostIds
+            }
+
+            val selectedPostId = candidates.random()
+
+            postSendHistoryRepository.save(PostSendHistory(userId = userId, postId = selectedPostId))
+
+            EmailRequest(subscriberId = userId, email = subscriber.email, postIds = listOf(selectedPostId))
         }
     }
 

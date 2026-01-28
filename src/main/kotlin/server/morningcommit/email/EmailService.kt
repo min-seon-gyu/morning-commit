@@ -19,7 +19,8 @@ class EmailService(
     private val templateEngine: TemplateEngine,
     @Value("\${app.tracking.base-url:http://localhost:18080/track}")
     private val trackingBaseUrl: String,
-    @Value("\${mail.username:}") private val from: String
+    @Value("\${spring.mail.username}")
+    private val from: String
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
