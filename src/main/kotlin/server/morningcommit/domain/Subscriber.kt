@@ -6,6 +6,7 @@ import jakarta.persistence.EntityListeners
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
+import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
@@ -28,4 +29,7 @@ class Subscriber(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long? = null
-)
+) {
+    @OneToMany(mappedBy = "subscriber")
+    var sendHistories: List<PostSendHistory> = mutableListOf()
+}

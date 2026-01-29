@@ -1,5 +1,6 @@
 package server.morningcommit.batch
 
+import jakarta.persistence.EntityManagerFactory
 import org.slf4j.LoggerFactory
 import org.springframework.batch.core.Job
 import org.springframework.batch.core.Step
@@ -8,8 +9,9 @@ import org.springframework.batch.core.job.builder.JobBuilder
 import org.springframework.batch.core.repository.JobRepository
 import org.springframework.batch.core.step.builder.StepBuilder
 import org.springframework.batch.item.ItemProcessor
-import org.springframework.batch.item.ItemReader
 import org.springframework.batch.item.ItemWriter
+import org.springframework.batch.item.database.JpaPagingItemReader
+import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilder
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.transaction.PlatformTransactionManager
@@ -19,13 +21,12 @@ import server.morningcommit.email.EmailProducer
 import server.morningcommit.email.dto.EmailRequest
 import server.morningcommit.repository.PostRepository
 import server.morningcommit.repository.PostSendHistoryRepository
-import server.morningcommit.repository.SubscriberRepository
 
 @Configuration
 class EmailDeliveryJobConfig(
     private val jobRepository: JobRepository,
     private val transactionManager: PlatformTransactionManager,
-    private val subscriberRepository: SubscriberRepository,
+    private val entityManagerFactory: EntityManagerFactory,
     private val postRepository: PostRepository,
     private val postSendHistoryRepository: PostSendHistoryRepository,
     private val emailProducer: EmailProducer
@@ -51,39 +52,34 @@ class EmailDeliveryJobConfig(
 
     @Bean
     @StepScope
-    fun subscriberReader(): ItemReader<Subscriber> {
-        val subscribers = mutableListOf<Subscriber>()
-        var initialized = false
-
-        return ItemReader {
-            if (!initialized) {
-                subscribers.addAll(subscriberRepository.findByIsActiveTrue())
-                initialized = true
-            }
-            subscribers.removeFirstOrNull()
-        }
+    fun subscriberReader(): JpaPagingItemReader<Subscriber> {
+        return JpaPagingItemReaderBuilder<Subscriber>()
+            .name("subscriberReader")
+            .entityManagerFactory(entityManagerFactory)
+            .queryString("SELECT DISTINCT s FROM Subscriber s LEFT JOIN FETCH s.sendHistories WHERE s.isActive = true")
+            .pageSize(10)
+            .build()
     }
 
     @Bean
+    @StepScope
     fun subscriberToEmailRequestProcessor(): ItemProcessor<Subscriber, EmailRequest> {
+        val allPostIdSet = postRepository.findAllIds().toSet()
+
         return ItemProcessor { subscriber ->
             val userId = subscriber.id!!
 
-            val allPostIds = postRepository.findAll().mapNotNull { it.id }
-
-            if (allPostIds.isEmpty()) {
-                log.info("No posts available. Skipping email for: ${subscriber.email}")
-
+            if (allPostIdSet.isEmpty()) {
                 return@ItemProcessor null
             }
 
-            val sentPostIds = postSendHistoryRepository.findSentPostIdsByUserId(userId).toSet()
+            val sentPostIds = subscriber.sendHistories.map { it.postId }.toSet()
 
-            var candidates = allPostIds.filter { it !in sentPostIds }
+            var candidates = allPostIdSet - sentPostIds
 
             if (candidates.isEmpty()) {
                 postSendHistoryRepository.deleteByUserId(userId)
-                candidates = allPostIds
+                candidates = allPostIdSet
             }
 
             val selectedPostId = candidates.random()

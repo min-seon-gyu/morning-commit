@@ -15,4 +15,7 @@ interface PostRepository : JpaRepository<Post, Long> {
     fun findTodayPosts(startOfDay: LocalDateTime): List<Post>
 
     fun findByBlog(blog: Blog, pageable: Pageable): Page<Post>
+
+    @Query("SELECT p.id FROM Post p")
+    fun findAllIds(): List<Long>
 }
