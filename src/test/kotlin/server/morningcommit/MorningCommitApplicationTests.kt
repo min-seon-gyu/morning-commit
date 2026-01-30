@@ -9,5 +9,4 @@ class MorningCommitApplicationTests {
     @Test
     fun contextLoads() {
     }
-
 }
