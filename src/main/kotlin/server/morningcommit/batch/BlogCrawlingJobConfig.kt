@@ -15,7 +15,6 @@ import org.springframework.batch.item.ItemReader
 import org.springframework.batch.item.ItemWriter
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.transaction.PlatformTransactionManager
 import server.morningcommit.ai.service.SummaryService
 import server.morningcommit.domain.BlogSource
@@ -139,14 +138,16 @@ class BlogCrawlingJobConfig(
     @Bean
     fun postListWriter(): ItemWriter<List<Post>> {
         return ItemWriter { chunk: Chunk<out List<Post>> ->
-            chunk.items.flatten().forEach { post ->
-                try {
-                    postRepository.save(post)
-                } catch (e: DataIntegrityViolationException) {
-                    log.warn("Duplicate post skipped: ${post.link}")
-                }
+            val allPosts = chunk.items.flatten()
+            if (allPosts.isEmpty()) return@ItemWriter
+
+            val existingLinks = postRepository.findExistingLinks(allPosts.map { it.link })
+            val newPosts = allPosts.filter { it.link !in existingLinks }
+
+            if (newPosts.isNotEmpty()) {
+                postRepository.saveAll(newPosts)
+                log.info("Saved ${newPosts.size} posts (${allPosts.size - newPosts.size} duplicates skipped)")
             }
-            log.info("Saved post")
         }
     }
 }
