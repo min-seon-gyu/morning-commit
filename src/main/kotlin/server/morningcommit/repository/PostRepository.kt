@@ -10,6 +10,9 @@ import server.morningcommit.domain.Post
 interface PostRepository : JpaRepository<Post, Long> {
     fun existsByLink(link: String): Boolean
 
+    @Query("SELECT p.link FROM Post p WHERE p.link IN :links")
+    fun findExistingLinks(links: Collection<String>): Set<String>
+
     fun findByBlog(blog: Blog, pageable: Pageable): Page<Post>
 
     @Query("SELECT p.id FROM Post p")
