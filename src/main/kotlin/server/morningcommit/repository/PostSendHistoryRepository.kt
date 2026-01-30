@@ -6,11 +6,7 @@ import org.springframework.data.jpa.repository.Query
 import server.morningcommit.domain.PostSendHistory
 
 interface PostSendHistoryRepository : JpaRepository<PostSendHistory, Long> {
-
-    @Query("SELECT h.postId FROM PostSendHistory h WHERE h.userId = :userId")
-    fun findSentPostIdsByUserId(userId: Long): List<Long>
-
     @Modifying
-    @Query("DELETE FROM PostSendHistory h WHERE h.userId = :userId")
-    fun deleteByUserId(userId: Long)
+    @Query("DELETE FROM PostSendHistory h WHERE h.subscriberId = :subscriberId")
+    fun deleteBySubscriberId(subscriberId: Long)
 }

@@ -20,7 +20,6 @@ import server.morningcommit.domain.Subscriber
 import server.morningcommit.email.EmailProducer
 import server.morningcommit.email.dto.EmailRequest
 import server.morningcommit.repository.PostRepository
-import server.morningcommit.repository.PostSendHistoryRepository
 
 @Configuration
 class EmailDeliveryJobConfig(
@@ -28,7 +27,6 @@ class EmailDeliveryJobConfig(
     private val transactionManager: PlatformTransactionManager,
     private val entityManagerFactory: EntityManagerFactory,
     private val postRepository: PostRepository,
-    private val postSendHistoryRepository: PostSendHistoryRepository,
     private val emailProducer: EmailProducer
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -56,7 +54,7 @@ class EmailDeliveryJobConfig(
         return JpaPagingItemReaderBuilder<Subscriber>()
             .name("subscriberReader")
             .entityManagerFactory(entityManagerFactory)
-            .queryString("SELECT DISTINCT s FROM Subscriber s LEFT JOIN FETCH s.sendHistories WHERE s.isActive = true")
+            .queryString("SELECT s FROM Subscriber s WHERE s.isActive = true")
             .pageSize(10)
             .build()
     }
@@ -67,8 +65,6 @@ class EmailDeliveryJobConfig(
         val allPostIdSet = postRepository.findAllIds().toSet()
 
         return ItemProcessor { subscriber ->
-            val userId = subscriber.id!!
-
             if (allPostIdSet.isEmpty()) {
                 return@ItemProcessor null
             }
@@ -78,15 +74,16 @@ class EmailDeliveryJobConfig(
             var candidates = allPostIdSet - sentPostIds
 
             if (candidates.isEmpty()) {
-                postSendHistoryRepository.deleteByUserId(userId)
+                subscriber.sendHistories.clear()
+
                 candidates = allPostIdSet
             }
 
             val selectedPostId = candidates.random()
 
-            postSendHistoryRepository.save(PostSendHistory(userId = userId, postId = selectedPostId))
+            subscriber.sendHistories.add(PostSendHistory(subscriber = subscriber, postId = selectedPostId))
 
-            EmailRequest(subscriberId = userId, email = subscriber.email, postIds = listOf(selectedPostId))
+            EmailRequest(subscriberId = subscriber.id!!, email = subscriber.email, postIds = listOf(selectedPostId))
         }
     }
 
