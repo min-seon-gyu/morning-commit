@@ -1,7 +1,9 @@
 package server.morningcommit.service
 
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import server.morningcommit.config.RedisConfig
 import server.morningcommit.repository.ClickLogRepository
 import server.morningcommit.service.dto.BlogClickCount
 import server.morningcommit.service.dto.DailyClickCount
@@ -30,6 +32,11 @@ class AnalyticsService(
         val maxDailyClicks: Long
     )
 
+    @Cacheable(
+        cacheNames = [RedisConfig.ANALYTICS_DASHBOARD],
+        key = "'dashboard'",
+        unless = "#result instanceof T(server.morningcommit.service.AnalyticsService.AnalyticsResult.NoData)"
+    )
     fun getDashboard(): AnalyticsResult {
         val totalClicks = clickLogRepository.countTotalClicks()
         if (totalClicks == 0L) {
@@ -45,11 +52,8 @@ class AnalyticsService(
 
         return AnalyticsResult.Success(
             AnalyticsDashboard(
-                totalClicks = totalClicks,
-                uniqueClickers = uniqueClickers,
-                topPosts = topPosts,
-                blogClicks = blogClicks,
-                dailyTrend = dailyTrend,
+                totalClicks = totalClicks, uniqueClickers = uniqueClickers, topPosts = topPosts,
+                blogClicks = blogClicks, dailyTrend = dailyTrend,
                 maxPostClicks = topPosts.maxOfOrNull { it.clickCount } ?: 1L,
                 maxBlogClicks = blogClicks.maxOfOrNull { it.clickCount } ?: 1L,
                 maxDailyClicks = dailyTrend.maxOfOrNull { it.clickCount } ?: 1L

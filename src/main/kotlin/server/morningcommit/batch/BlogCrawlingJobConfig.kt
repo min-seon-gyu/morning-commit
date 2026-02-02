@@ -13,15 +13,17 @@ import org.springframework.batch.item.Chunk
 import org.springframework.batch.item.ItemProcessor
 import org.springframework.batch.item.ItemReader
 import org.springframework.batch.item.ItemWriter
+import org.springframework.cache.CacheManager
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.transaction.PlatformTransactionManager
 import server.morningcommit.ai.service.SummaryService
+import server.morningcommit.config.RedisConfig
 import server.morningcommit.domain.BlogSource
 import server.morningcommit.domain.Post
-import server.morningcommit.repository.BlogSourceRepository
 import server.morningcommit.repository.PostRepository
 import server.morningcommit.scraper.HtmlScraper
+import server.morningcommit.service.BlogSourceService
 import java.net.URI
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -30,10 +32,11 @@ import java.time.ZoneId
 class BlogCrawlingJobConfig(
     private val jobRepository: JobRepository,
     private val transactionManager: PlatformTransactionManager,
-    private val blogSourceRepository: BlogSourceRepository,
+    private val blogSourceService: BlogSourceService,
     private val postRepository: PostRepository,
     private val htmlScraper: HtmlScraper,
-    private val summaryService: SummaryService
+    private val summaryService: SummaryService,
+    private val cacheManager: CacheManager
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -62,7 +65,7 @@ class BlogCrawlingJobConfig(
 
         return ItemReader<BlogSource> {
             if (!initialized) {
-                sources.addAll(blogSourceRepository.findByIsActiveTrue())
+                sources.addAll(blogSourceService.findActiveSources())
                 initialized = true
             }
             sources.removeFirstOrNull()
@@ -146,6 +149,9 @@ class BlogCrawlingJobConfig(
 
             if (newPosts.isNotEmpty()) {
                 postRepository.saveAll(newPosts)
+
+                cacheManager.getCache(RedisConfig.POST_LISTING)?.clear()
+
                 log.info("Saved ${newPosts.size} posts (${allPosts.size - newPosts.size} duplicates skipped)")
             }
         }
