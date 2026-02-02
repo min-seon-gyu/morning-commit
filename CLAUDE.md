@@ -175,3 +175,4 @@ Each subscriber receives one random post per day without duplicates until all po
   - Input format validation (e.g., @NotNull, @Size)
   - Authentication and authorization
   - Invoking Services and mapping responses
+
