@@ -9,10 +9,12 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestParam
 import server.morningcommit.domain.Blog
 import server.morningcommit.repository.PostRepository
+import server.morningcommit.service.AnalyticsService
 
 @Controller
 class ViewController(
-    private val postRepository: PostRepository
+    private val postRepository: PostRepository,
+    private val analyticsService: AnalyticsService
 ) {
 
     @GetMapping("/")
@@ -31,5 +33,19 @@ class ViewController(
         model.addAttribute("blogs", Blog.entries)
         model.addAttribute("currentBlog", blog)
         return "index"
+    }
+
+    @GetMapping("/analytics")
+    fun analytics(model: Model): String {
+        return when (val result = analyticsService.getDashboard()) {
+            is AnalyticsService.AnalyticsResult.Success -> {
+                model.addAttribute("dashboard", result.data)
+                "analytics"
+            }
+            AnalyticsService.AnalyticsResult.NoData -> {
+                model.addAttribute("noData", true)
+                "analytics"
+            }
+        }
     }
 }
