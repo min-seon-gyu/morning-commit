@@ -34,8 +34,7 @@ class SummaryService(
             )
 
             val response = openAiClient.createChatCompletion(
-                authorization = "Bearer $apiKey",
-                request = request
+                authorization = "Bearer $apiKey", request = request
             )
 
             response.choices.firstOrNull()?.message?.content
