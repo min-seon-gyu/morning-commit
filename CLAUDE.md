@@ -165,3 +165,13 @@ Each subscriber receives one random post per day without duplicates until all po
 - Package: `server.morningcommit.*`
 - JPA entities use `allOpen` plugin for `@Entity`, `@MappedSuperclass`, `@Embeddable`
 - Kotlin strict JSR-305 null-safety mode enabled
+
+### Layered Responsibility
+
+- Business rules and domain-level validations must be implemented in the Service layer.
+  - Examples: state transition validation, duplication checks, policy decisions, permission-based logic
+- The API (Controller) layer is responsible only for the following:
+  - Request parameter binding
+  - Input format validation (e.g., @NotNull, @Size)
+  - Authentication and authorization
+  - Invoking Services and mapping responses
