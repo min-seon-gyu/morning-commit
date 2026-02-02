@@ -27,7 +27,7 @@ class EmailService(
     fun sendNewsletter(to: String, posts: List<Post>, subscriberId: Long) {
         try {
             val trackedPosts = posts.map { post -> toTrackedPost(post, subscriberId) }
-            val htmlContent = renderTemplate(trackedPosts)
+            val htmlContent = renderTemplate(trackedPosts, to)
             val message: MimeMessage = mailSender.createMimeMessage()
 
             MimeMessageHelper(message, true, "UTF-8").apply {
@@ -58,9 +58,10 @@ class EmailService(
         )
     }
 
-    private fun renderTemplate(posts: List<TrackedPost>): String {
+    private fun renderTemplate(posts: List<TrackedPost>, subscriberEmail: String): String {
         val context = Context().apply {
             setVariable("posts", posts)
+            setVariable("subscriberEmail", subscriberEmail)
         }
         return templateEngine.process("newsletter", context)
     }
