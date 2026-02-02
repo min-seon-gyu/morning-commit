@@ -36,6 +36,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     runtimeOnly("com.mysql:mysql-connector-j")
 
+    // Cache (Redis)
+    implementation("org.springframework.boot:spring-boot-starter-data-redis")
+
     // External API (AI 요약 연동)
     implementation("org.springframework.cloud:spring-cloud-starter-openfeign")
 

@@ -19,14 +19,14 @@ import server.morningcommit.domain.PostSendHistory
 import server.morningcommit.domain.Subscriber
 import server.morningcommit.email.EmailProducer
 import server.morningcommit.email.dto.EmailRequest
-import server.morningcommit.repository.PostRepository
+import server.morningcommit.service.PostService
 
 @Configuration
 class EmailDeliveryJobConfig(
     private val jobRepository: JobRepository,
     private val transactionManager: PlatformTransactionManager,
     private val entityManagerFactory: EntityManagerFactory,
-    private val postRepository: PostRepository,
+    private val postService: PostService,
     private val emailProducer: EmailProducer
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -62,7 +62,7 @@ class EmailDeliveryJobConfig(
     @Bean
     @StepScope
     fun subscriberToEmailRequestProcessor(): ItemProcessor<Subscriber, EmailRequest> {
-        val allPostIdSet = postRepository.findAllIds().toSet()
+        val allPostIdSet = postService.findAllIds().toSet()
 
         return ItemProcessor { subscriber ->
             if (allPostIdSet.isEmpty()) {
@@ -80,7 +80,6 @@ class EmailDeliveryJobConfig(
             }
 
             val selectedPostId = candidates.random()
-
             subscriber.sendHistories.add(PostSendHistory(subscriber = subscriber, postId = selectedPostId))
 
             EmailRequest(subscriberId = subscriber.id!!, email = subscriber.email, postIds = listOf(selectedPostId))
@@ -93,6 +92,7 @@ class EmailDeliveryJobConfig(
             chunk.items.forEach { emailRequest ->
                 try {
                     emailProducer.sendEmailEvent(emailRequest)
+
                     log.info("Queued email for: ${emailRequest.email}")
                 } catch (e: Exception) {
                     log.error("Failed to queue email for ${emailRequest.email}: ${e.message}", e)

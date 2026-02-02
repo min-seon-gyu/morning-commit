@@ -8,12 +8,12 @@ import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestParam
 import server.morningcommit.domain.Blog
-import server.morningcommit.repository.PostRepository
 import server.morningcommit.service.AnalyticsService
+import server.morningcommit.service.PostService
 
 @Controller
 class ViewController(
-    private val postRepository: PostRepository,
+    private val postService: PostService,
     private val analyticsService: AnalyticsService
 ) {
 
@@ -24,14 +24,15 @@ class ViewController(
         model: Model
     ): String {
         val posts = if (blog != null) {
-            postRepository.findByBlog(blog, pageable)
+            postService.findByBlog(blog, pageable)
         } else {
-            postRepository.findAll(pageable)
+            postService.findAll(pageable)
         }
 
         model.addAttribute("posts", posts)
         model.addAttribute("blogs", Blog.entries)
         model.addAttribute("currentBlog", blog)
+
         return "index"
     }
 
