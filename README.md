@@ -34,7 +34,7 @@ blogCrawlingJob (매일 오전 1시 실행)
     ├─► 최근 게시글 필터링
     ├─► 본문 스크래핑 (Jsoup)
     ├─► AI 요약 (OpenAI via Feign)
-    └─► Post 엔티티 저장
+    └─► Post 엔티티 일괄 저장 (중복 사전 필터링)
 
 emailDeliveryJob (매일 오전 7시 실행)
     │
@@ -116,6 +116,7 @@ server.morningcommit
 - `GET /track?url={encodedUrl}&subscriberId={id}` - 클릭 추적 후 원본 URL로 리다이렉트 (302)
 - 뉴스레터 이메일의 링크가 트래킹 URL로 변환되어 발송
 - 클릭 이벤트는 `ClickLog` 엔티티에 저장되어 분석에 활용
+- 리다이렉트 URL은 DB에 등록된 Post 링크만 허용 (Open Redirect 방지)
 
 ## Shuffle-and-Deplete 알고리즘
 

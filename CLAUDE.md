@@ -52,7 +52,7 @@ blogCrawlingJob (Daily at 1 AM)
     ├─► Filter recent posts
     ├─► Scrape full content (Jsoup)
     ├─► Summarize (OpenAI via Feign)
-    └─► Save Post entities
+    └─► Batch save Post entities (pre-filtered duplicates via findExistingLinks)
 
 emailDeliveryJob (Daily at 7 AM)
     │
@@ -128,7 +128,7 @@ server.morningcommit
 ## Key Components
 
 ### Batch Jobs
-- **blogCrawlingJob**: Crawls RSS, scrapes content, summarizes, saves to DB
+- **blogCrawlingJob**: Crawls RSS, scrapes content, summarizes, batch saves to DB (duplicates pre-filtered)
 - **emailDeliveryJob**: Reads subscribers, selects random post (shuffle-and-deplete), publishes to RabbitMQ
 
 ### Shuffle-and-Deplete Algorithm
@@ -156,6 +156,7 @@ Each subscriber receives one random post per day without duplicates until all po
 
 ### Click Tracking
 - `GET /track?url={encodedUrl}&subscriberId={id}` - Tracks click and redirects (302)
+- Redirect URL is validated against known Post links in DB (prevents open redirect)
 - Links in newsletter emails are wrapped with tracking URLs
 - Click events stored in `ClickLog` entity for analytics
 
