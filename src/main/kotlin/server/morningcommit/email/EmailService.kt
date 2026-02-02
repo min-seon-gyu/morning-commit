@@ -17,8 +17,8 @@ import java.nio.charset.StandardCharsets
 class EmailService(
     private val mailSender: JavaMailSender,
     private val templateEngine: TemplateEngine,
-    @Value("\${app.tracking.base-url:http://localhost:18080/track}")
-    private val trackingBaseUrl: String,
+    @Value("\${app.base-url:http://localhost:18080}")
+    private val baseUrl: String,
     @Value("\${spring.mail.username}")
     private val from: String
 ) {
@@ -47,7 +47,7 @@ class EmailService(
 
     private fun toTrackedPost(post: Post, subscriberId: Long): TrackedPost {
         val encodedUrl = URLEncoder.encode(post.link, StandardCharsets.UTF_8)
-        val trackedLink = "$trackingBaseUrl?url=$encodedUrl&subscriberId=$subscriberId"
+        val trackedLink = "$baseUrl/track?url=$encodedUrl&subscriberId=$subscriberId"
 
         return TrackedPost(
             title = post.title,
@@ -62,6 +62,7 @@ class EmailService(
         val context = Context().apply {
             setVariable("posts", posts)
             setVariable("subscriberEmail", subscriberEmail)
+            setVariable("baseUrl", baseUrl)
         }
         return templateEngine.process("newsletter", context)
     }

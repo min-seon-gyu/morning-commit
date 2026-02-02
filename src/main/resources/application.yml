@@ -72,3 +72,9 @@ spring:
 openai:
   url: https://api.openai.com/v1
   api-key: ${OPENAI_API_KEY}
+
+# ==========================================
+# 7. 커스텀 설정 (Application)
+# ==========================================
+app:
+  base-url: http://localhost:18080
