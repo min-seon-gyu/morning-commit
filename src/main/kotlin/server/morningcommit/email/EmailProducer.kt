@@ -14,10 +14,7 @@ class EmailProducer(
 
     fun sendEmailEvent(request: EmailRequest) {
         log.info("Publishing email event for: ${request.email} with ${request.postIds.size} posts")
-        rabbitTemplate.convertAndSend(
-            RabbitMqConfig.EXCHANGE_NAME,
-            RabbitMqConfig.ROUTING_KEY,
-            request
-        )
+
+        rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.ROUTING_KEY, request)
     }
 }

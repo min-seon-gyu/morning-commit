@@ -20,9 +20,7 @@ class TrackingConsumer(
 
         try {
             val clickLog = ClickLog(
-                subscriberId = event.subscriberId,
-                targetUrl = event.targetUrl,
-                clickedAt = event.timestamp
+                subscriberId = event.subscriberId, targetUrl = event.targetUrl, clickedAt = event.timestamp
             )
 
             clickLogRepository.save(clickLog)
