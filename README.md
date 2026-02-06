@@ -9,6 +9,8 @@
 - **AI 요약**: OpenAI GPT를 통한 아티클 자동 요약
 - **이메일 발송**: 개인화된 뉴스레터를 구독자에게 전달
 - **클릭 트래킹**: 뉴스레터 링크 클릭 추적 및 분석
+- **분석 대시보드**: 클릭 통계, 인기 포스트, 블로그별 현황, 일별 트렌드 시각화
+- **Redis 캐싱**: 대시보드 및 포스트 목록 성능 최적화
 - **웹 UI**: 블로그별 필터링 및 페이지네이션 지원
 
 ## 기술 스택
@@ -23,6 +25,7 @@
 | Template | Thymeleaf |
 | External API | OpenFeign (OpenAI API) |
 | Parser | Rome (RSS/Atom), Jsoup (HTML) |
+| Cache | Redis |
 
 ## 아키텍처
 
@@ -86,7 +89,8 @@ server.morningcommit
 │   ├── EmailProducer # RabbitMQ Publisher
 │   ├── EmailConsumer # RabbitMQ Listener
 │   └── TrackingConsumer # 클릭 트래킹 Listener
-└── config/           # Spring 설정
+├── service/          # AnalyticsService, TrackingService, PostService
+└── config/           # Spring 설정 (RabbitMQ, Redis, JPA 등)
 ```
 
 ## RabbitMQ 설정
@@ -109,7 +113,22 @@ server.morningcommit
 ## 웹 UI
 
 - `GET /` - 포스트 목록 (페이지네이션 9개/페이지, 블로그별 필터링)
+- `GET /analytics` - 분석 대시보드 (클릭 통계, 인기 포스트, 일별 트렌드)
 - Thymeleaf + Tailwind CSS 기반
+
+## 분석 대시보드
+
+- **요약 카드**: 총 클릭 수, 유니크 사용자 수, 최다 클릭 블로그, 클릭된 포스트 수
+- **인기 포스트 Top 10**: 클릭 수 기반 상위 10개 포스트 시각화
+- **블로그별 인기도**: 블로그별 클릭 분포
+- **일별 트렌드**: 최근 30일간 일별 클릭 추이
+
+## Redis 캐싱
+
+| 캐시 이름 | TTL | 용도 |
+|-----------|-----|------|
+| `ANALYTICS_DASHBOARD` | 10분 | 대시보드 통계 |
+| `POST_LISTING` | 30분 | 포스트 목록 페이지네이션 |
 
 ## 클릭 트래킹
 
