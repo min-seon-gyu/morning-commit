@@ -24,6 +24,7 @@ import server.morningcommit.domain.Post
 import server.morningcommit.repository.PostRepository
 import server.morningcommit.scraper.HtmlScraper
 import server.morningcommit.service.BlogSourceService
+import server.morningcommit.service.PostSearchService
 import java.net.URI
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -36,7 +37,8 @@ class BlogCrawlingJobConfig(
     private val postRepository: PostRepository,
     private val htmlScraper: HtmlScraper,
     private val summaryService: SummaryService,
-    private val cacheManager: CacheManager
+    private val cacheManager: CacheManager,
+    private val postSearchService: PostSearchService
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -148,9 +150,15 @@ class BlogCrawlingJobConfig(
             val newPosts = allPosts.filter { it.link !in existingLinks }
 
             if (newPosts.isNotEmpty()) {
-                postRepository.saveAll(newPosts)
+                val savedPosts = postRepository.saveAll(newPosts)
 
                 cacheManager.getCache(RedisConfig.POST_LISTING)?.clear()
+
+                try {
+                    postSearchService.indexPosts(savedPosts.toList())
+                } catch (e: Exception) {
+                    log.error("Failed to index posts to Elasticsearch", e)
+                }
 
                 log.info("Saved ${newPosts.size} posts (${allPosts.size - newPosts.size} duplicates skipped)")
             }
