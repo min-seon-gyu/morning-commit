@@ -23,6 +23,7 @@ class RedisConfig {
     companion object {
         const val ANALYTICS_DASHBOARD = "analytics-dashboard"
         const val POST_LISTING = "post-listing"
+        const val POST_SEARCH = "post-search"
     }
 
     @Bean
@@ -41,6 +42,7 @@ class RedisConfig {
         val cacheConfigs = mapOf(
             ANALYTICS_DASHBOARD to defaultConfig.entryTtl(Duration.ofMinutes(10)),
             POST_LISTING to defaultConfig.entryTtl(Duration.ofMinutes(30)),
+            POST_SEARCH to defaultConfig.entryTtl(Duration.ofMinutes(15)),
         )
 
         return RedisCacheManager.builder(connectionFactory)
