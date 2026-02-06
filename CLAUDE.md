@@ -41,6 +41,7 @@ MorningCommit is a daily tech blog newsletter service that:
 - **OpenFeign** for OpenAI API integration
 - **Rome** for RSS/Atom parsing
 - **Jsoup** for HTML scraping
+- **Redis** for caching (dashboard, post listings)
 
 ## Architecture
 
@@ -104,7 +105,8 @@ server.morningcommit
 │   ├── EmailProducer # RabbitMQ publisher
 │   ├── EmailConsumer # RabbitMQ listener
 │   └── TrackingConsumer # Click tracking listener
-└── config/           # Spring configurations
+├── service/          # AnalyticsService, TrackingService, PostService
+└── config/           # Spring configurations (RabbitMQ, Redis, JPA)
 ```
 
 ## Environment Variables
@@ -124,6 +126,8 @@ server.morningcommit
 | `MAIL_USERNAME` | - | SMTP username |
 | `MAIL_PASSWORD` | - | SMTP password |
 | `app.tracking.base-url` | `http://localhost:18080/track` | Base URL for click tracking |
+| `REDIS_HOST` | `localhost` | Redis host |
+| `REDIS_PORT` | `16379` | Redis port |
 
 ## Key Components
 
@@ -152,7 +156,18 @@ Each subscriber receives one random post per day without duplicates until all po
 
 ### Web UI
 - `GET /` - Post listing with pagination (9 items/page) and blog filtering
+- `GET /analytics` - Analytics dashboard with click statistics and trends
 - Uses Thymeleaf + Tailwind CSS
+
+### Analytics Dashboard
+- Summary cards: total clicks, unique clickers, top blog, clicked posts count
+- Top 10 posts visualization by click count
+- Blog popularity breakdown
+- 30-day daily trend chart
+
+### Redis Caching
+- `ANALYTICS_DASHBOARD`: 10-minute TTL for dashboard statistics
+- `POST_LISTING`: 30-minute TTL for paginated post results
 
 ### Click Tracking
 - `GET /track?url={encodedUrl}&subscriberId={id}` - Tracks click and redirects (302)
