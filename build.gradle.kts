@@ -39,6 +39,9 @@ dependencies {
     // Cache (Redis)
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
 
+    // Search (Elasticsearch)
+    implementation("org.springframework.boot:spring-boot-starter-data-elasticsearch")
+
     // External API (AI 요약 연동)
     implementation("org.springframework.cloud:spring-cloud-starter-openfeign")
 

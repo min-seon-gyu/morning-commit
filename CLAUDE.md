@@ -128,6 +128,8 @@ server.morningcommit
 | `app.tracking.base-url` | `http://localhost:18080/track` | Base URL for click tracking |
 | `REDIS_HOST` | `localhost` | Redis host |
 | `REDIS_PORT` | `16379` | Redis port |
+| `ELASTICSEARCH_HOST` | `localhost` | Elasticsearch host |
+| `ELASTICSEARCH_PORT` | `19200` | Elasticsearch port |
 
 ## Key Components
 

@@ -30,7 +30,13 @@ spring:
       port: ${REDIS_PORT:16379}
 
   # ==========================================
-  # 3. RabbitMQ 설정
+  # 3. Elasticsearch 설정
+  # ==========================================
+  elasticsearch:
+    uris: http://${ELASTICSEARCH_HOST:localhost}:${ELASTICSEARCH_PORT:19200}
+
+  # ==========================================
+  # 4. RabbitMQ 설정
   # ==========================================
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
@@ -40,7 +46,7 @@ spring:
     password: ${RABBITMQ_PASSWORD:guest}
 
   # ==========================================
-  # 4. 이메일 설정 (SMTP)
+  # 5. 이메일 설정 (SMTP)
   # ==========================================
   mail:
     host: ${MAIL_HOST:smtp.naver.com}
@@ -58,7 +64,7 @@ spring:
             enable: true
 
   # ==========================================
-  # 5. Spring Batch 설정
+  # 6. Spring Batch 설정
   # ==========================================
   batch:
     jdbc:
@@ -67,14 +73,14 @@ spring:
       enabled: false
 
 # ==========================================
-# 6. 커스텀 설정 (OpenAI)
+# 7. 커스텀 설정 (OpenAI)
 # ==========================================
 openai:
   url: https://api.openai.com/v1
   api-key: ${OPENAI_API_KEY}
 
 # ==========================================
-# 7. 커스텀 설정 (Application)
+# 8. 커스텀 설정 (Application)
 # ==========================================
 app:
   base-url: http://localhost:18080
