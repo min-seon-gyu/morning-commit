@@ -24,6 +24,9 @@ services:
       # Redis Config
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      # Elasticsearch Config
+      - ELASTICSEARCH_HOST=elasticsearch
+      - ELASTICSEARCH_PORT=9200
       # OpenAI Config
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     depends_on:
@@ -33,6 +36,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+      elasticsearch:
+        condition: service_healthy
     networks:
       - morningcommit-net
 
@@ -65,7 +70,27 @@ services:
     networks:
       - morningcommit-net
 
-  # 4. RabbitMQ
+  # 4. Elasticsearch
+  elasticsearch:
+    image: elasticsearch:8.12.0
+    container_name: morningcommit-es
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms256m -Xmx256m
+    ports:
+      - "19200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - morningcommit-net
+
+  # 5. RabbitMQ
   rabbitmq:
     image: rabbitmq:management-alpine
     container_name: morningcommit-mq
@@ -89,3 +114,4 @@ networks:
 
 volumes:
   mysql_data:
+  es_data:
