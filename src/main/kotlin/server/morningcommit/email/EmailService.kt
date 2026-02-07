@@ -17,7 +17,7 @@ import java.nio.charset.StandardCharsets
 class EmailService(
     private val mailSender: JavaMailSender,
     private val templateEngine: TemplateEngine,
-    @Value("\${app.base-url:http://localhost:18080}")
+    @Value("\${app.base-url}")
     private val baseUrl: String,
     @Value("\${spring.mail.username}")
     private val from: String

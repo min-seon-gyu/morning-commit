@@ -83,4 +83,4 @@ openai:
 # 8. 커스텀 설정 (Application)
 # ==========================================
 app:
-  base-url: http://localhost:18080
+  base-url: ${APP_BASE_URL:http://localhost:18080}
