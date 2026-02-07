@@ -156,7 +156,18 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td align="center" style="padding-top: 12px;">
+                                    <td align="center" style="padding-top: 16px;">
+                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                                            <tr>
+                                                <td style="background-color: #1E293B; border-radius: 6px;">
+                                                    <a th:href="${baseUrl}" style="display: inline-block; padding: 12px 24px; font-size: 14px; font-weight: 600; color: #FFFFFF; text-decoration: none;">더 많은 아티클 보러가기</a>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td align="center" style="padding-top: 16px;">
                                         <a th:href="@{${baseUrl}/api/subscribers/unsubscribe(email=${subscriberEmail})}" style="font-size: 13px; color: #64748B; text-decoration: underline;">구독 취소</a>
                                     </td>
                                 </tr>
