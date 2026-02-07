@@ -3,25 +3,40 @@ package server.morningcommit.controller
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import server.morningcommit.controller.dto.SubscribeRequest
+import server.morningcommit.controller.dto.SendVerificationRequest
+import server.morningcommit.controller.dto.VerifyRequest
+import server.morningcommit.email.EmailService
 import server.morningcommit.service.SubscriberService
-import server.morningcommit.service.SubscriberService.SubscribeResult
 import server.morningcommit.service.SubscriberService.UnsubscribeResult
 
 @RestController
 @RequestMapping("/api/subscribers")
 class SubscriberController(
-    private val subscriberService: SubscriberService
+    private val subscriberService: SubscriberService,
+    private val emailService: EmailService
 ) {
 
-    @PostMapping
-    fun subscribe(@RequestBody request: SubscribeRequest): ResponseEntity<Map<String, String>> {
-        return when (subscriberService.subscribe(request.email)) {
-            SubscribeResult.Created -> ResponseEntity.status(HttpStatus.CREATED)
-                .body(mapOf("message" to "구독이 완료되었습니다."))
-            SubscribeResult.Reactivated -> ResponseEntity.ok(mapOf("message" to "구독이 다시 활성화되었습니다."))
-            SubscribeResult.AlreadyActive -> ResponseEntity.status(HttpStatus.CONFLICT)
+    @PostMapping("/send-verification")
+    fun sendVerification(@RequestBody request: SendVerificationRequest): ResponseEntity<Map<String, String>> {
+        if (subscriberService.isAlreadyActive(request.email)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(mapOf("message" to "이미 구독 중인 이메일입니다."))
+        }
+
+        val code = subscriberService.generateAndSave(request.email)
+        emailService.sendVerificationEmail(request.email, code)
+
+        return ResponseEntity.ok(mapOf("message" to "인증번호가 발송되었습니다."))
+    }
+
+    @PostMapping("/verify")
+    fun verify(@RequestBody request: VerifyRequest): ResponseEntity<Map<String, String>> {
+        return if (subscriberService.verifyAndSubscribe(request.email, request.code)) {
+            ResponseEntity.status(HttpStatus.CREATED)
+                .body(mapOf("message" to "구독이 완료되었습니다."))
+        } else {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(mapOf("message" to "인증번호가 유효하지 않습니다."))
         }
     }
 

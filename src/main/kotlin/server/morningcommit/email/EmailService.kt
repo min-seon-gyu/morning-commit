@@ -24,6 +24,25 @@ class EmailService(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
+    fun sendVerificationEmail(to: String, code: String) {
+        try {
+            val message: MimeMessage = mailSender.createMimeMessage()
+
+            MimeMessageHelper(message, true, "UTF-8").apply {
+                setFrom(from)
+                setTo(to)
+                setSubject("[MorningCommit] 이메일 인증번호")
+                setText("인증번호: $code\n\n이 인증번호는 5분간 유효합니다.", false)
+            }
+
+            mailSender.send(message)
+            log.info("Verification email sent to: $to")
+        } catch (e: Exception) {
+            log.error("Failed to send verification email to $to: ${e.message}", e)
+            throw e
+        }
+    }
+
     fun sendNewsletter(to: String, posts: List<Post>, subscriberId: Long) {
         try {
             val trackedPosts = posts.map { post -> toTrackedPost(post, subscriberId) }

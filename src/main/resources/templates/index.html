@@ -44,16 +44,22 @@
     <!-- Header -->
     <header class="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-10 border-b border-slate-200/50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                    <span class="text-white font-bold text-lg">M</span>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                        <span class="text-white font-bold text-lg">M</span>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-1 pb-1">
+                            MorningCommit
+                        </h1>
+                        <p class="text-sm text-slate-500">매일 아침, 기술 아티클</p>
+                    </div>
                 </div>
-                <div>
-                    <h1 class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-1 pb-1">
-                        MorningCommit
-                    </h1>
-                    <p class="text-sm text-slate-500">매일 아침, 기술 아티클</p>
-                </div>
+                <button onclick="openSubscribeModal()"
+                        class="px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-sm font-semibold rounded-full shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 transition-all duration-300 hover:-translate-y-0.5">
+                    구독하기
+                </button>
             </div>
         </div>
     </header>
@@ -296,5 +302,262 @@
             </div>
         </div>
     </footer>
+    <!-- Subscribe Modal -->
+    <div id="subscribeModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeSubscribeModal()"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md">
+            <div class="bg-white rounded-2xl shadow-2xl p-8 mx-4">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-bold text-slate-900">뉴스레터 구독</h2>
+                    <button onclick="closeSubscribeModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Step 1: Email Input -->
+                <div id="step1">
+                    <p class="text-sm text-slate-500 mb-4">매일 아침 기술 아티클을 이메일로 받아보세요.</p>
+                    <input id="emailInput" type="email" placeholder="이메일 주소를 입력하세요"
+                           class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                           onkeydown="if(event.key==='Enter') sendVerification()">
+                    <p id="emailError" class="text-red-500 text-xs mt-2 hidden"></p>
+                    <button onclick="sendVerification()" id="sendBtn"
+                            class="w-full mt-4 px-5 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-500/30 hover:shadow-xl transition-all duration-300">
+                        인증번호 발송
+                    </button>
+                </div>
+
+                <!-- Step 2: Code Input -->
+                <div id="step2" class="hidden">
+                    <p class="text-sm text-slate-500 mb-2">
+                        <span id="sentEmail" class="font-semibold text-slate-700"></span>으로 인증번호를 발송했습니다.
+                    </p>
+                    <p class="text-sm mb-4">
+                        남은 시간: <span id="timer" class="font-bold text-indigo-600">5:00</span>
+                    </p>
+                    <input id="codeInput" type="text" maxlength="6" placeholder="인증번호 6자리를 입력하세요"
+                           class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-center tracking-widest font-mono text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                           onkeydown="if(event.key==='Enter') verifyCode()">
+                    <p id="codeError" class="text-red-500 text-xs mt-2 hidden"></p>
+                    <button onclick="verifyCode()" id="verifyBtn"
+                            class="w-full mt-4 px-5 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-500/30 hover:shadow-xl transition-all duration-300">
+                        인증하기
+                    </button>
+                    <button onclick="resendVerification()" id="resendBtn"
+                            class="w-full mt-2 px-5 py-2 text-sm text-indigo-600 font-medium hover:text-indigo-800 transition-colors">
+                        인증번호 재발송
+                    </button>
+                </div>
+
+                <!-- Step 3: Result -->
+                <div id="step3" class="hidden text-center">
+                    <div id="successResult" class="hidden">
+                        <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-900 mb-2">구독 완료!</h3>
+                        <p class="text-sm text-slate-500">매일 아침 기술 아티클을 보내드리겠습니다.</p>
+                    </div>
+                    <div id="failResult" class="hidden">
+                        <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-red-400 to-rose-500 rounded-full flex items-center justify-center">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-900 mb-2">구독 실패</h3>
+                        <p id="failMessage" class="text-sm text-slate-500"></p>
+                    </div>
+                    <button onclick="closeSubscribeModal()"
+                            class="mt-6 px-5 py-2.5 bg-slate-100 text-slate-700 text-sm font-semibold rounded-xl hover:bg-slate-200 transition-colors">
+                        닫기
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let timerInterval = null;
+
+        function openSubscribeModal() {
+            document.getElementById('subscribeModal').classList.remove('hidden');
+            resetModal();
+        }
+
+        function closeSubscribeModal() {
+            document.getElementById('subscribeModal').classList.add('hidden');
+            clearInterval(timerInterval);
+        }
+
+        function resetModal() {
+            document.getElementById('step1').classList.remove('hidden');
+            document.getElementById('step2').classList.add('hidden');
+            document.getElementById('step3').classList.add('hidden');
+            document.getElementById('emailInput').value = '';
+            document.getElementById('codeInput').value = '';
+            document.getElementById('emailError').classList.add('hidden');
+            document.getElementById('codeError').classList.add('hidden');
+            document.getElementById('sendBtn').disabled = false;
+            clearInterval(timerInterval);
+        }
+
+        function validateEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        function startTimer() {
+            let remaining = 300;
+            const timerEl = document.getElementById('timer');
+            clearInterval(timerInterval);
+
+            timerInterval = setInterval(function () {
+                remaining--;
+                const min = Math.floor(remaining / 60);
+                const sec = remaining % 60;
+                timerEl.textContent = min + ':' + String(sec).padStart(2, '0');
+
+                if (remaining <= 0) {
+                    clearInterval(timerInterval);
+                    timerEl.textContent = '0:00';
+                    document.getElementById('codeError').textContent = '인증번호가 만료되었습니다. 재발송해주세요.';
+                    document.getElementById('codeError').classList.remove('hidden');
+                    document.getElementById('verifyBtn').disabled = true;
+                }
+            }, 1000);
+        }
+
+        function sendVerification() {
+            const email = document.getElementById('emailInput').value.trim();
+            const errorEl = document.getElementById('emailError');
+            const sendBtn = document.getElementById('sendBtn');
+
+            if (!validateEmail(email)) {
+                errorEl.textContent = '올바른 이메일 형식을 입력해주세요.';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            errorEl.classList.add('hidden');
+            sendBtn.disabled = true;
+            sendBtn.textContent = '발송 중...';
+
+            fetch('/api/subscribers/send-verification', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({email: email})
+            })
+            .then(function (res) { return res.json().then(function (data) { return {status: res.status, data: data}; }); })
+            .then(function (result) {
+                if (result.status === 409) {
+                    errorEl.textContent = result.data.message;
+                    errorEl.classList.remove('hidden');
+                    sendBtn.disabled = false;
+                    sendBtn.textContent = '인증번호 발송';
+                    return;
+                }
+                if (result.status >= 400) {
+                    errorEl.textContent = '발송에 실패했습니다. 다시 시도해주세요.';
+                    errorEl.classList.remove('hidden');
+                    sendBtn.disabled = false;
+                    sendBtn.textContent = '인증번호 발송';
+                    return;
+                }
+                document.getElementById('sentEmail').textContent = email;
+                document.getElementById('step1').classList.add('hidden');
+                document.getElementById('step2').classList.remove('hidden');
+                document.getElementById('verifyBtn').disabled = false;
+                startTimer();
+            })
+            .catch(function () {
+                errorEl.textContent = '네트워크 오류가 발생했습니다.';
+                errorEl.classList.remove('hidden');
+                sendBtn.disabled = false;
+                sendBtn.textContent = '인증번호 발송';
+            });
+        }
+
+        function resendVerification() {
+            const email = document.getElementById('sentEmail').textContent;
+            const resendBtn = document.getElementById('resendBtn');
+            const codeErrorEl = document.getElementById('codeError');
+
+            resendBtn.disabled = true;
+            resendBtn.textContent = '재발송 중...';
+            codeErrorEl.classList.add('hidden');
+
+            fetch('/api/subscribers/send-verification', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({email: email})
+            })
+            .then(function (res) { return res.json().then(function (data) { return {status: res.status, data: data}; }); })
+            .then(function (result) {
+                resendBtn.disabled = false;
+                resendBtn.textContent = '인증번호 재발송';
+                if (result.status >= 400) {
+                    codeErrorEl.textContent = '재발송에 실패했습니다.';
+                    codeErrorEl.classList.remove('hidden');
+                    return;
+                }
+                document.getElementById('codeInput').value = '';
+                document.getElementById('verifyBtn').disabled = false;
+                startTimer();
+            })
+            .catch(function () {
+                resendBtn.disabled = false;
+                resendBtn.textContent = '인증번호 재발송';
+                codeErrorEl.textContent = '네트워크 오류가 발생했습니다.';
+                codeErrorEl.classList.remove('hidden');
+            });
+        }
+
+        function verifyCode() {
+            const email = document.getElementById('sentEmail').textContent;
+            const code = document.getElementById('codeInput').value.trim();
+            const codeErrorEl = document.getElementById('codeError');
+            const verifyBtn = document.getElementById('verifyBtn');
+
+            if (code.length !== 6) {
+                codeErrorEl.textContent = '인증번호 6자리를 입력해주세요.';
+                codeErrorEl.classList.remove('hidden');
+                return;
+            }
+
+            codeErrorEl.classList.add('hidden');
+            verifyBtn.disabled = true;
+            verifyBtn.textContent = '인증 중...';
+
+            fetch('/api/subscribers/verify', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({email: email, code: code})
+            })
+            .then(function (res) { return res.json().then(function (data) { return {status: res.status, data: data}; }); })
+            .then(function (result) {
+                clearInterval(timerInterval);
+                document.getElementById('step2').classList.add('hidden');
+                document.getElementById('step3').classList.remove('hidden');
+
+                if (result.status >= 200 && result.status < 300) {
+                    document.getElementById('successResult').classList.remove('hidden');
+                    document.getElementById('failResult').classList.add('hidden');
+                } else {
+                    document.getElementById('successResult').classList.add('hidden');
+                    document.getElementById('failResult').classList.remove('hidden');
+                    document.getElementById('failMessage').textContent = result.data.message;
+                }
+            })
+            .catch(function () {
+                verifyBtn.disabled = false;
+                verifyBtn.textContent = '인증하기';
+                codeErrorEl.textContent = '네트워크 오류가 발생했습니다.';
+                codeErrorEl.classList.remove('hidden');
+            });
+        }
+    </script>
 </body>
 </html>

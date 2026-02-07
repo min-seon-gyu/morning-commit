@@ -1,5 +1,5 @@
 package server.morningcommit.controller.dto
 
-data class SubscribeRequest(
+data class SendVerificationRequest(
     val email: String
 )
