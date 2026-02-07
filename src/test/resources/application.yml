@@ -1,0 +1,86 @@
+spring:
+  application:
+    name: morning-commit
+
+  cache:
+    type: none
+
+  # ==========================================
+  # 1. 데이터베이스 설정
+  # ==========================================
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # [수정] 로컬 실행 시 Docker가 열어준 13306 포트로 접속
+    url: ${DB_URL:jdbc:mysql://localhost:13306/morningcommit?serverTimezone=Asia/Seoul}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:1234}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  # ==========================================
+  # 2. Redis 설정 (추가됨)
+  # ==========================================
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      # [수정] 로컬 실행 시 Docker가 열어준 16379 포트로 접속
+      port: ${REDIS_PORT:16379}
+
+  # ==========================================
+  # 3. Elasticsearch 설정
+  # ==========================================
+  elasticsearch:
+    uris: http://${ELASTICSEARCH_HOST:localhost}:${ELASTICSEARCH_PORT:19200}
+
+  # ==========================================
+  # 4. RabbitMQ 설정
+  # ==========================================
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    # [수정] 로컬 실행 시 Docker가 열어준 15673 포트로 접속
+    port: ${RABBITMQ_PORT:15673}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+  # ==========================================
+  # 4. 이메일 설정 (SMTP)
+  # ==========================================
+  mail:
+    host: ${MAIL_HOST:smtp.naver.com}
+    port: ${MAIL_PORT:465}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+            trust: "*"
+          starttls:
+            enable: true
+
+  # ==========================================
+  # 5. Spring Batch 설정
+  # ==========================================
+  batch:
+    jdbc:
+      initialize-schema: always
+    job:
+      enabled: false
+
+# ==========================================
+# 6. 커스텀 설정 (OpenAI)
+# ==========================================
+openai:
+  url: https://api.openai.com/v1
+  api-key: ${OPENAI_API_KEY:}
+
+app:
+  base-url: ${APP_BASE_URL:http://localhost:18080}
