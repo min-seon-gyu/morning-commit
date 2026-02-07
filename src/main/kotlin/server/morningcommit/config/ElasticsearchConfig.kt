@@ -31,7 +31,7 @@ class ElasticsearchConfig(
     }
 
     @Bean
-    fun elasticsearchOperations(client: ElasticsearchClient): ElasticsearchOperations {
+    fun elasticsearchTemplate(client: ElasticsearchClient): ElasticsearchOperations {
         return ElasticsearchTemplate(client)
     }
 }
