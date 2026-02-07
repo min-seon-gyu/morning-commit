@@ -125,7 +125,7 @@ server.morningcommit
 | `MAIL_PORT` | `465` | SMTP port |
 | `MAIL_USERNAME` | - | SMTP username |
 | `MAIL_PASSWORD` | - | SMTP password |
-| `app.tracking.base-url` | `http://localhost:18080/track` | Base URL for click tracking |
+| `app.tracking.base-url` | `https://moringcommit.store/track` | Base URL for click tracking |
 | `REDIS_HOST` | `localhost` | Redis host |
 | `REDIS_PORT` | `16379` | Redis port |
 | `ELASTICSEARCH_HOST` | `localhost` | Elasticsearch host |
