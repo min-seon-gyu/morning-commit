@@ -27,13 +27,27 @@ class SummaryService(
             2. "key_insight": A single Korean sentence explaining WHY a developer should read this. MUST end in formal polite form (합니다체/습니다체). Example endings: ~할 수 있습니다, ~를 제시합니다, ~에 도움이 됩니다. Do NOT use plain form like ~있다, ~된다.
             3. "tags": A list of technical keywords (e.g., "Kotlin", "MSA", "Redis"). Max 5 tags.
             4. "difficulty": Choose one of ["BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"].
+            5. "is_promotional": Judge by the MAIN PURPOSE of the article. Set to true only if the article's primary goal is promotion, not education.
+               Promotional (true):
+               - Articles whose main content is job postings, recruitment, or hiring
+               - Event, seminar, conference, or meetup promotion articles
+               - Internal event recaps or reports (hackathons, workshops, offsites, training programs, education days) that focus on the event experience rather than technical implementation details
+               - Product or service advertisements
+               - Articles primarily about company/team introductions, organizational culture, or internal team activity reports
+               - Marketing campaigns, discount or sale announcements
+               - Year-in-review or retrospective posts focused on a team/company (not on technology)
+               - Interview-style articles about company employees or teams
+               NOT promotional (false):
+               - A technical article that teaches specific technology, architecture, algorithm, or engineering practice is NOT promotional, even if it has a standard recruitment footer or "we are hiring" boilerplate at the end. Most Korean tech blogs include such footers by default — ignore them.
+               - An article describing how a real engineering problem was solved at a company is a genuine tech article, not a company introduction.
 
             Example format:
             {
               "summary": ["Redis 캐시를 활용한 API 응답 속도 개선", "분산 환경에서의 캐시 무효화 전략 구현", "Spring Boot와 Redis 연동 설정 방법"],
               "key_insight": "대규모 트래픽 환경에서 Redis 캐시를 효과적으로 활용하여 API 성능을 극적으로 개선할 수 있습니다.",
               "tags": ["Redis", "Spring Boot", "Cache"],
-              "difficulty": "INTERMEDIATE"
+              "difficulty": "INTERMEDIATE",
+              "is_promotional": false
             }
 
             DO NOT output markdown code blocks (```json). Just return the raw JSON string.

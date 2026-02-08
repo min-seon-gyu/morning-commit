@@ -110,6 +110,11 @@ class BlogCrawlingJobConfig(
                             }
 
                             val analysisResult = summaryService.analyze(fullContent)
+
+                            if (analysisResult.isPromotional) {
+                                return@mapNotNull null
+                            }
+
                             val readingTimeMin = ceil(fullContent.length / 500.0).toInt().coerceAtLeast(1)
 
                             Post(

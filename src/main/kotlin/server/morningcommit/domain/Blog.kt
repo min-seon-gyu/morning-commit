@@ -5,7 +5,6 @@ enum class Blog(val displayName: String) {
     KAKAO_PAY("Kakao Pay"),
     TOSS_TECH("Toss Tech"),
     WOOWA_BROS("우아한"),
-    NAVER_D2("Naver"),
     LINE_ENGINEERING("LINE"),
     HYPERCONNECT_TECH("하이퍼커넥트"),
     KURLY("Kurly"),

@@ -7,5 +7,7 @@ data class BlogAnalysisResult(
     @JsonProperty("key_insight")
     val keyInsight: String = "",
     val tags: List<String> = emptyList(),
-    val difficulty: String = "INTERMEDIATE"
+    val difficulty: String = "INTERMEDIATE",
+    @JsonProperty("is_promotional")
+    val isPromotional: Boolean = false
 )
