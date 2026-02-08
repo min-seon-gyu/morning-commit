@@ -28,7 +28,7 @@ services:
       - ELASTICSEARCH_HOST=elasticsearch
       - ELASTICSEARCH_PORT=9200
       # Application Config
-      - APP_BASE_URL=https://moringcommit.store
+      - APP_BASE_URL=https://morningcommit.store
       # OpenAI Config
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     depends_on:
