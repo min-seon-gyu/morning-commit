@@ -26,20 +26,14 @@ class SummaryService(
             1. "summary": A list of 3 strings. Summarize key points in Korean. Each point MUST end in noun form (명사형 종결). Example endings: ~방법, ~구현, ~개선, ~활용, ~도입, ~처리, ~분석. Do NOT use verb endings like ~한다, ~이다, ~됨.
             2. "key_insight": A single Korean sentence explaining WHY a developer should read this. MUST end in formal polite form (합니다체/습니다체). Example endings: ~할 수 있습니다, ~를 제시합니다, ~에 도움이 됩니다. Do NOT use plain form like ~있다, ~된다.
             3. "tags": A list of technical keywords (e.g., "Kotlin", "MSA", "Redis"). Max 5 tags.
-            4. "difficulty": Choose one of ["BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"].
-            5. "is_promotional": Judge by the MAIN PURPOSE of the article. Set to true only if the article's primary goal is promotion, not education.
-               Promotional (true):
-               - Articles whose main content is job postings, recruitment, or hiring
-               - Event, seminar, conference, or meetup promotion articles
-               - Internal event recaps or reports (hackathons, workshops, offsites, training programs, education days) that focus on the event experience rather than technical implementation details
-               - Product or service advertisements
-               - Articles primarily about company/team introductions, organizational culture, or internal team activity reports
-               - Marketing campaigns, discount or sale announcements
-               - Year-in-review or retrospective posts focused on a team/company (not on technology)
-               - Interview-style articles about company employees or teams
-               NOT promotional (false):
-               - A technical article that teaches specific technology, architecture, algorithm, or engineering practice is NOT promotional, even if it has a standard recruitment footer or "we are hiring" boilerplate at the end. Most Korean tech blogs include such footers by default — ignore them.
-               - An article describing how a real engineering problem was solved at a company is a genuine tech article, not a company introduction.
+            4. "difficulty": Choose one of ["BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"]. Do NOT default to INTERMEDIATE — evaluate carefully.
+               BEGINNER: introductory tutorials, getting started guides, basic concepts explained for newcomers.
+               INTERMEDIATE: practical how-to articles, common patterns, standard library/framework usage.
+               ADVANCED: deep dives into internals, performance optimization, complex architecture, distributed systems.
+               EXPERT: cutting-edge research, low-level systems (kernel, compiler, JVM internals), novel algorithms, large-scale infrastructure design.
+            5. "is_promotional": true if the article does NOT teach reusable technical knowledge. Judge by the MAIN PURPOSE.
+               true (filter out): recruitment/hiring, event/hackathon/workshop recaps, product/shopping recommendations, company/team/culture introductions, employee interviews, project retrospectives about teamwork (not tech), research/model showcases without implementation details, marketing/sales promotions, any non-technical content on tech blogs (lifestyle, hobbies, product curation, etc.).
+               false (keep): articles teaching specific technology, architecture, algorithm, or engineering practice. A standard "we are hiring" footer common in Korean tech blogs does NOT make an article promotional — ignore it.
 
             Example format:
             {

@@ -4,9 +4,7 @@
       "Bash(./gradlew build:*)",
       "Bash(./gradlew test:*)",
       "Bash(./gradlew compileKotlin:*)",
-      "Bash(./gradlew clean build:*)",
-      "WebFetch(domain:tech.kakaopay.com)",
-      "WebFetch(domain:techblog.lycorp.co.jp)"
+      "Bash(./gradlew clean build:*)"
     ]
   }
 }
