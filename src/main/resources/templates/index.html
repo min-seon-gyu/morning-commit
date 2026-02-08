@@ -67,8 +67,8 @@
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Filter Section -->
-        <div class="mb-8 overflow-x-auto">
-            <div class="flex gap-2 pb-2 min-w-max">
+        <div class="mb-8">
+            <div class="flex flex-wrap gap-2">
                 <a th:href="@{/}"
                    th:classappend="${currentBlog == null} ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/30' : 'bg-white text-slate-700 hover:bg-slate-50 hover:shadow-md'"
                    class="px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 whitespace-nowrap">
@@ -100,20 +100,21 @@
                               th:text="${#temporals.format(post.publishDate, 'yyyy.MM.dd')}">2024.01.01</time>
                     </div>
 
-                    <!-- Title + Tags -->
-                    <div class="mb-3">
-                        <h2 class="inline">
-                            <a th:href="${post.link}"
-                               th:text="${post.title}"
-                               target="_blank"
-                               rel="noopener noreferrer"
-                               class="text-lg font-bold text-slate-900 hover:text-indigo-600 transition-colors duration-200 leading-snug">
-                                Post Title
-                            </a>
-                        </h2>
+                    <!-- Title -->
+                    <h2 class="mb-2">
+                        <a th:href="${post.link}"
+                           th:text="${post.title}"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           class="text-lg font-bold text-slate-900 hover:text-indigo-600 transition-colors duration-200 leading-snug">
+                            Post Title
+                        </a>
+                    </h2>
+                    <!-- Tags -->
+                    <div class="flex flex-wrap gap-1.5 mb-3">
                         <span th:each="tag : ${post.tags}"
                               th:text="${tag}"
-                              class="inline-flex items-center ml-1.5 px-2 py-0.5 text-[10px] font-semibold text-slate-500 bg-slate-100 rounded align-middle">
+                              class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold text-slate-500 bg-slate-100 rounded">
                             Tag
                         </span>
                     </div>
