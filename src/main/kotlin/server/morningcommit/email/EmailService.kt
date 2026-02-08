@@ -26,13 +26,14 @@ class EmailService(
 
     fun sendVerificationEmail(to: String, code: String) {
         try {
+            val htmlContent = renderVerificationTemplate(code)
             val message: MimeMessage = mailSender.createMimeMessage()
 
             MimeMessageHelper(message, true, "UTF-8").apply {
                 setFrom(from)
                 setTo(to)
                 setSubject("[MorningCommit] 이메일 인증번호")
-                setText("인증번호: $code\n\n이 인증번호는 5분간 유효합니다.", false)
+                setText(htmlContent, true)
             }
 
             mailSender.send(message)
@@ -72,6 +73,14 @@ class EmailService(
             title = post.title, link = trackedLink, summary = post.summary, keyInsight = post.keyInsight,
             publishDate = post.publishDate, blog = post.blog
         )
+    }
+
+    private fun renderVerificationTemplate(code: String): String {
+        val context = Context().apply {
+            setVariable("code", code)
+            setVariable("baseUrl", baseUrl)
+        }
+        return templateEngine.process("verification", context)
     }
 
     private fun renderTemplate(post: TrackedPost, subscriberEmail: String): String {
