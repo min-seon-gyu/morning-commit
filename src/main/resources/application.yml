@@ -7,7 +7,6 @@ spring:
   # ==========================================
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    # [수정] 로컬 실행 시 Docker가 열어준 13306 포트로 접속
     url: ${DB_URL:jdbc:mysql://localhost:13306/morningcommit?serverTimezone=Asia/Seoul}
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:1234}
@@ -26,7 +25,6 @@ spring:
   data:
     redis:
       host: ${REDIS_HOST:localhost}
-      # [수정] 로컬 실행 시 Docker가 열어준 16379 포트로 접속
       port: ${REDIS_PORT:16379}
 
   # ==========================================
@@ -40,7 +38,6 @@ spring:
   # ==========================================
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
-    # [수정] 로컬 실행 시 Docker가 열어준 15673 포트로 접속
     port: ${RABBITMQ_PORT:15673}
     username: ${RABBITMQ_USERNAME:guest}
     password: ${RABBITMQ_PASSWORD:guest}
@@ -49,7 +46,7 @@ spring:
   # 5. 이메일 설정 (SMTP)
   # ==========================================
   mail:
-    host: ${MAIL_HOST:smtp.naver.com}
+    host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:465}
     username: ${MAIL_USERNAME}
     password: ${MAIL_PASSWORD}
