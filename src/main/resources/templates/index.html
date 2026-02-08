@@ -413,7 +413,22 @@
             document.getElementById('codeInput').value = '';
             document.getElementById('emailError').classList.add('hidden');
             document.getElementById('codeError').classList.add('hidden');
-            document.getElementById('sendBtn').disabled = false;
+
+            var sendBtn = document.getElementById('sendBtn');
+            sendBtn.disabled = false;
+            sendBtn.textContent = '인증번호 발송';
+
+            var verifyBtn = document.getElementById('verifyBtn');
+            verifyBtn.disabled = false;
+            verifyBtn.textContent = '인증하기';
+
+            var resendBtn = document.getElementById('resendBtn');
+            resendBtn.disabled = false;
+            resendBtn.textContent = '인증번호 재발송';
+
+            document.getElementById('successResult').classList.add('hidden');
+            document.getElementById('failResult').classList.add('hidden');
+
             clearInterval(timerInterval);
         }
 
@@ -455,7 +470,14 @@
 
             errorEl.classList.add('hidden');
             sendBtn.disabled = true;
-            sendBtn.textContent = '발송 중...';
+
+            document.getElementById('sentEmail').textContent = email;
+            document.getElementById('step1').classList.add('hidden');
+            document.getElementById('step2').classList.remove('hidden');
+            document.getElementById('verifyBtn').disabled = false;
+            startTimer();
+
+            var codeErrorEl = document.getElementById('codeError');
 
             fetch('/api/subscribers/send-verification', {
                 method: 'POST',
@@ -465,30 +487,18 @@
             .then(function (res) { return res.json().then(function (data) { return {status: res.status, data: data}; }); })
             .then(function (result) {
                 if (result.status === 409) {
-                    errorEl.textContent = result.data.message;
-                    errorEl.classList.remove('hidden');
-                    sendBtn.disabled = false;
-                    sendBtn.textContent = '인증번호 발송';
+                    codeErrorEl.textContent = result.data.message;
+                    codeErrorEl.classList.remove('hidden');
                     return;
                 }
                 if (result.status >= 400) {
-                    errorEl.textContent = '발송에 실패했습니다. 다시 시도해주세요.';
-                    errorEl.classList.remove('hidden');
-                    sendBtn.disabled = false;
-                    sendBtn.textContent = '인증번호 발송';
-                    return;
+                    codeErrorEl.textContent = '인증번호 발송에 실패했습니다. 재발송해주세요.';
+                    codeErrorEl.classList.remove('hidden');
                 }
-                document.getElementById('sentEmail').textContent = email;
-                document.getElementById('step1').classList.add('hidden');
-                document.getElementById('step2').classList.remove('hidden');
-                document.getElementById('verifyBtn').disabled = false;
-                startTimer();
             })
             .catch(function () {
-                errorEl.textContent = '네트워크 오류가 발생했습니다.';
-                errorEl.classList.remove('hidden');
-                sendBtn.disabled = false;
-                sendBtn.textContent = '인증번호 발송';
+                codeErrorEl.textContent = '네트워크 오류가 발생했습니다. 재발송해주세요.';
+                codeErrorEl.classList.remove('hidden');
             });
         }
 
@@ -541,7 +551,6 @@
 
             codeErrorEl.classList.add('hidden');
             verifyBtn.disabled = true;
-            verifyBtn.textContent = '인증 중...';
 
             fetch('/api/subscribers/verify', {
                 method: 'POST',
@@ -550,22 +559,19 @@
             })
             .then(function (res) { return res.json().then(function (data) { return {status: res.status, data: data}; }); })
             .then(function (result) {
-                clearInterval(timerInterval);
-                document.getElementById('step2').classList.add('hidden');
-                document.getElementById('step3').classList.remove('hidden');
-
                 if (result.status >= 200 && result.status < 300) {
+                    clearInterval(timerInterval);
+                    document.getElementById('step2').classList.add('hidden');
+                    document.getElementById('step3').classList.remove('hidden');
                     document.getElementById('successResult').classList.remove('hidden');
-                    document.getElementById('failResult').classList.add('hidden');
                 } else {
-                    document.getElementById('successResult').classList.add('hidden');
-                    document.getElementById('failResult').classList.remove('hidden');
-                    document.getElementById('failMessage').textContent = result.data.message;
+                    verifyBtn.disabled = false;
+                    codeErrorEl.textContent = result.data.message || '인증에 실패했습니다. 다시 시도해주세요.';
+                    codeErrorEl.classList.remove('hidden');
                 }
             })
             .catch(function () {
                 verifyBtn.disabled = false;
-                verifyBtn.textContent = '인증하기';
                 codeErrorEl.textContent = '네트워크 오류가 발생했습니다.';
                 codeErrorEl.classList.remove('hidden');
             });
