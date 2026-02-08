@@ -71,61 +71,76 @@
                         </td>
                     </tr>
 
-                    <!-- Posts Section -->
+                    <!-- Post Section -->
                     <tr>
                         <td style="padding: 0 40px 32px 40px; background-color: #FFFFFF;">
-                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
-                                <!-- Post Card (repeated with th:each) -->
-                                <tr th:each="post, iterStat : ${posts}">
-                                    <td style="padding-bottom: 24px;" th:styleappend="${iterStat.last} ? 'padding-bottom: 0;' : ''">
-                                        <!-- Card Container -->
-                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #F8FAFC; border-radius: 10px; border: 1px solid #E2E8F0;">
+                            <!-- Card Container -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #F8FAFC; border-radius: 10px; border: 1px solid #E2E8F0;">
+                                <tr>
+                                    <td style="padding: 24px;">
+                                        <!-- Blog Badge -->
+                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                                             <tr>
-                                                <td style="padding: 24px;">
-                                                    <!-- Blog Badge -->
-                                                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-                                                        <tr>
-                                                            <td style="background-color: #EFF6FF; padding: 4px 12px; border-radius: 20px;">
-                                                                <span th:text="${post.blog.displayName}" style="font-size: 12px; font-weight: 600; color: #3B82F6; text-transform: uppercase; letter-spacing: 0.5px;">Blog Name</span>
-                                                            </td>
-                                                        </tr>
-                                                    </table>
+                                                <td style="background-color: #EFF6FF; padding: 4px 12px; border-radius: 20px;">
+                                                    <span th:text="${post.blog.displayName}" style="font-size: 12px; font-weight: 600; color: #3B82F6; text-transform: uppercase; letter-spacing: 0.5px;">Blog Name</span>
+                                                </td>
+                                            </tr>
+                                        </table>
 
-                                                    <!-- Title -->
-                                                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="padding-top: 16px;">
-                                                        <tr>
-                                                            <td>
-                                                                <a th:href="${post.link}" th:text="${post.title}" target="_blank" style="font-size: 18px; font-weight: 700; color: #1E293B; text-decoration: none; line-height: 1.4;">Post Title</a>
-                                                            </td>
-                                                        </tr>
-                                                    </table>
+                                        <!-- Title -->
+                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="padding-top: 16px;">
+                                            <tr>
+                                                <td>
+                                                    <a th:href="${post.link}" th:text="${post.title}" target="_blank" style="font-size: 18px; font-weight: 700; color: #1E293B; text-decoration: none; line-height: 1.4;">Post Title</a>
+                                                </td>
+                                            </tr>
+                                        </table>
 
-                                                    <!-- Date -->
-                                                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="padding-top: 8px;" th:if="${post.publishDate}">
-                                                        <tr>
-                                                            <td>
-                                                                <span th:text="${#temporals.format(post.publishDate, 'yyyy년 M월 d일')}" style="font-size: 12px; color: #94A3B8;">2024년 1월 1일</span>
-                                                            </td>
-                                                        </tr>
-                                                    </table>
+                                        <!-- Date -->
+                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="padding-top: 8px;" th:if="${post.publishDate}">
+                                            <tr>
+                                                <td>
+                                                    <span th:text="${#temporals.format(post.publishDate, 'yyyy년 M월 d일')}" style="font-size: 12px; color: #94A3B8;">2024년 1월 1일</span>
+                                                </td>
+                                            </tr>
+                                        </table>
 
-                                                    <!-- Description -->
-                                                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="padding-top: 12px;">
-                                                        <tr>
-                                                            <td>
-                                                                <span th:text="${post.description}" style="font-size: 14px; color: #64748B; line-height: 1.6;">Summary content here...</span>
-                                                            </td>
-                                                        </tr>
-                                                    </table>
+                                        <!-- Key Insight Section -->
+                                        <table th:if="${post.keyInsight != null and !post.keyInsight.isEmpty()}" role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="padding-top: 16px;">
+                                            <tr>
+                                                <td style="padding: 14px 16px; background-color: #FFFBEB; border-radius: 8px; border: 1px solid #FDE68A;">
+                                                    <span style="font-size: 14px; font-weight: 700; color: #92400E;">&#128161; &#50780; &#51069;&#50612;&#50556; &#54624;&#44620;&#50836;?</span>
+                                                    <br/>
+                                                    <span th:text="${post.keyInsight}" style="font-size: 14px; color: #78350F; line-height: 1.6; display: inline-block; margin-top: 6px;">Key insight here</span>
+                                                </td>
+                                            </tr>
+                                        </table>
 
-                                                    <!-- Read More Button -->
-                                                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="padding-top: 20px;">
-                                                        <tr>
-                                                            <td style="background-color: #3B82F6; border-radius: 6px;">
-                                                                <a th:href="${post.link}" target="_blank" style="display: inline-block; padding: 10px 20px; font-size: 14px; font-weight: 600; color: #FFFFFF; text-decoration: none;">아티클 읽기 &rarr;</a>
+                                        <!-- Summary Section -->
+                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="padding-top: 16px;">
+                                            <tr>
+                                                <td>
+                                                    <span style="font-size: 14px; font-weight: 700; color: #1E293B;">&#128221; &#54645;&#49900; &#50836;&#50557;</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding-top: 8px;">
+                                                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                                                        <tr th:each="point : ${post.summary}">
+                                                            <td style="padding-bottom: 6px;">
+                                                                <span style="font-size: 14px; color: #475569; line-height: 1.6;">&#8226; <span th:text="${point}">Summary point</span></span>
                                                             </td>
                                                         </tr>
                                                     </table>
+                                                </td>
+                                            </tr>
+                                        </table>
+
+                                        <!-- Read More Button -->
+                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="padding-top: 20px;">
+                                            <tr>
+                                                <td style="background-color: #3B82F6; border-radius: 6px;">
+                                                    <a th:href="${post.link}" target="_blank" style="display: inline-block; padding: 10px 20px; font-size: 14px; font-weight: 600; color: #FFFFFF; text-decoration: none;">아티클 읽기 &rarr;</a>
                                                 </td>
                                             </tr>
                                         </table>

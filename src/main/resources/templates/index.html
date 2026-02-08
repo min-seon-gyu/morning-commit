@@ -92,7 +92,7 @@
             <article th:each="post : ${posts.content}"
                      class="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 hover:border-indigo-100">
                 <div class="p-6">
-                    <!-- Badge and Date -->
+                    <!-- Blog Badge and Date -->
                     <div class="flex items-center justify-between mb-4">
                         <span class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 rounded-full ring-1 ring-indigo-100"
                               th:text="${post.blog.displayName}">Blog Name</span>
@@ -100,32 +100,43 @@
                               th:text="${#temporals.format(post.publishDate, 'yyyy.MM.dd')}">2024.01.01</time>
                     </div>
 
-                    <!-- Title -->
-                    <h2 class="mb-4">
-                        <a th:href="${post.link}"
-                           th:text="${post.title}"
-                           target="_blank"
-                           rel="noopener noreferrer"
-                           class="text-lg font-bold text-slate-900 hover:text-indigo-600 transition-colors duration-200 line-clamp-2 leading-snug">
-                            Post Title
-                        </a>
-                    </h2>
-
-                    <!-- AI Summary -->
-                    <div class="bg-gradient-to-br from-slate-50 to-slate-100/50 rounded-xl p-4 border border-slate-100">
-                        <div class="flex items-center gap-2 mb-2">
-                            <div class="w-5 h-5 rounded-md bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
-                                <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z"/>
-                                </svg>
-                            </div>
-                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">AI 요약</span>
-                        </div>
-                        <p th:text="${post.description}"
-                           class="text-sm text-slate-600 leading-relaxed line-clamp-4">
-                            Post description goes here...
-                        </p>
+                    <!-- Title + Tags -->
+                    <div class="mb-3">
+                        <h2 class="inline">
+                            <a th:href="${post.link}"
+                               th:text="${post.title}"
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               class="text-lg font-bold text-slate-900 hover:text-indigo-600 transition-colors duration-200 leading-snug">
+                                Post Title
+                            </a>
+                        </h2>
+                        <span th:each="tag : ${post.tags}"
+                              th:text="${tag}"
+                              class="inline-flex items-center ml-1.5 px-2 py-0.5 text-[10px] font-semibold text-slate-500 bg-slate-100 rounded align-middle">
+                            Tag
+                        </span>
                     </div>
+
+                    <!-- Reading Time + Difficulty -->
+                    <div class="flex items-center gap-2 mb-4 text-sm text-slate-500">
+                        <span th:if="${post.readingTimeMin > 0}">
+                            &#9201; <span th:text="${post.readingTimeMin}">7</span>&#48516;
+                        </span>
+                        <span th:if="${post.readingTimeMin > 0}">|</span>
+                        <span th:text="${post.difficulty}"
+                              th:classappend="${post.difficulty == 'BEGINNER'} ? 'text-green-600' : (${post.difficulty == 'INTERMEDIATE'} ? 'text-yellow-600' : (${post.difficulty == 'ADVANCED'} ? 'text-orange-600' : 'text-red-600'))">
+                            INTERMEDIATE
+                        </span>
+                    </div>
+
+                    <!-- Summary Bullets -->
+                    <ul class="space-y-1.5">
+                        <li th:each="point : ${post.summary}" class="flex items-start gap-2 text-sm text-slate-600 leading-relaxed">
+                            <span class="text-slate-400 mt-0.5">&#8226;</span>
+                            <span th:text="${point}">Summary point</span>
+                        </li>
+                    </ul>
                 </div>
             </article>
         </div>

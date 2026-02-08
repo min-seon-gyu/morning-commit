@@ -82,7 +82,7 @@ class EmailDeliveryJobConfig(
             val selectedPostId = candidates.random()
             subscriber.sendHistories.add(PostSendHistory(subscriber = subscriber, postId = selectedPostId))
 
-            EmailRequest(subscriberId = subscriber.id!!, email = subscriber.email, postIds = listOf(selectedPostId))
+            EmailRequest(subscriberId = subscriber.id!!, email = subscriber.email, postId = selectedPostId)
         }
     }
 

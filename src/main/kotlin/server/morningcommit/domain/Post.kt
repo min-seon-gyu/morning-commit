@@ -1,6 +1,7 @@
 package server.morningcommit.domain
 
 import jakarta.persistence.Column
+import jakarta.persistence.Convert
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
@@ -10,6 +11,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.Index
 import jakarta.persistence.Lob
 import jakarta.persistence.Table
+import server.morningcommit.config.StringListConverter
 import java.time.LocalDateTime
 
 @Entity
@@ -26,7 +28,21 @@ class Post(
 
     @Lob
     @Column(columnDefinition = "TEXT")
-    var description: String? = null,
+    @Convert(converter = StringListConverter::class)
+    var summary: List<String> = emptyList(),
+
+    @Column(length = 500)
+    var keyInsight: String? = null,
+
+    @Lob
+    @Column(columnDefinition = "TEXT")
+    @Convert(converter = StringListConverter::class)
+    var tags: List<String> = emptyList(),
+
+    @Column(length = 20)
+    var difficulty: String = "INTERMEDIATE",
+
+    var readingTimeMin: Int = 0,
 
     var publishDate: LocalDateTime? = null,
 

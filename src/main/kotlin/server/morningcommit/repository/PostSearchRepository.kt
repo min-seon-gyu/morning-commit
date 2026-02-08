@@ -12,7 +12,7 @@ interface PostSearchRepository : ElasticsearchRepository<PostDocument, String> {
         {
             "multi_match": {
                 "query": "?0",
-                "fields": ["title^2", "description"],
+                "fields": ["title^2", "tags"],
                 "type": "best_fields"
             }
         }
@@ -26,7 +26,7 @@ interface PostSearchRepository : ElasticsearchRepository<PostDocument, String> {
                     {
                         "multi_match": {
                             "query": "?0",
-                            "fields": ["title^2", "description"],
+                            "fields": ["title^2", "tags"],
                             "type": "best_fields"
                         }
                     },

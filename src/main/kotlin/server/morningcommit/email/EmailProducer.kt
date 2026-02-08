@@ -13,7 +13,7 @@ class EmailProducer(
     private val log = LoggerFactory.getLogger(javaClass)
 
     fun sendEmailEvent(request: EmailRequest) {
-        log.info("Publishing email event for: ${request.email} with ${request.postIds.size} posts")
+        log.info("Publishing email event for: ${request.email} with postId: ${request.postId}")
 
         rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.ROUTING_KEY, request)
     }

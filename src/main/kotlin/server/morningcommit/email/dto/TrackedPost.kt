@@ -6,7 +6,8 @@ import java.time.LocalDateTime
 data class TrackedPost(
     val title: String,
     val link: String,
-    val description: String?,
+    val summary: List<String>,
+    val keyInsight: String?,
     val publishDate: LocalDateTime?,
     val blog: Blog
 )

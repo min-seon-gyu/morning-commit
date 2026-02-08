@@ -20,7 +20,16 @@ data class PostDocument(
     val link: String,
 
     @Field(type = FieldType.Text, analyzer = "standard")
-    val description: String?,
+    val summary: List<String> = emptyList(),
+
+    @Field(type = FieldType.Keyword)
+    val tags: List<String> = emptyList(),
+
+    @Field(type = FieldType.Keyword)
+    val difficulty: String = "INTERMEDIATE",
+
+    @Field(type = FieldType.Integer)
+    val readingTimeMin: Int = 0,
 
     @Field(type = FieldType.Date)
     val publishDate: LocalDateTime?,
@@ -37,8 +46,16 @@ data class PostDocument(
     companion object {
         fun from(post: Post): PostDocument {
             return PostDocument(
-                id = post.id.toString(), title = post.title, link = post.link, description = post.description,
-                publishDate = post.publishDate, blog = post.blog.name, createdAt = post.createdAt,
+                id = post.id.toString(),
+                title = post.title,
+                link = post.link,
+                summary = post.summary,
+                tags = post.tags,
+                difficulty = post.difficulty,
+                readingTimeMin = post.readingTimeMin,
+                publishDate = post.publishDate,
+                blog = post.blog.name,
+                createdAt = post.createdAt,
                 updatedAt = post.updatedAt
             )
         }

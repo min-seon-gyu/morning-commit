@@ -43,10 +43,10 @@ class EmailService(
         }
     }
 
-    fun sendNewsletter(to: String, posts: List<Post>, subscriberId: Long) {
+    fun sendNewsletter(to: String, post: Post, subscriberId: Long) {
         try {
-            val trackedPosts = posts.map { post -> toTrackedPost(post, subscriberId) }
-            val htmlContent = renderTemplate(trackedPosts, to)
+            val trackedPost = toTrackedPost(post, subscriberId)
+            val htmlContent = renderTemplate(trackedPost, to)
             val message: MimeMessage = mailSender.createMimeMessage()
 
             MimeMessageHelper(message, true, "UTF-8").apply {
@@ -69,17 +69,14 @@ class EmailService(
         val trackedLink = "$baseUrl/track?url=$encodedUrl&subscriberId=$subscriberId"
 
         return TrackedPost(
-            title = post.title,
-            link = trackedLink,
-            description = post.description,
-            publishDate = post.publishDate,
-            blog = post.blog
+            title = post.title, link = trackedLink, summary = post.summary, keyInsight = post.keyInsight,
+            publishDate = post.publishDate, blog = post.blog
         )
     }
 
-    private fun renderTemplate(posts: List<TrackedPost>, subscriberEmail: String): String {
+    private fun renderTemplate(post: TrackedPost, subscriberEmail: String): String {
         val context = Context().apply {
-            setVariable("posts", posts)
+            setVariable("post", post)
             setVariable("subscriberEmail", subscriberEmail)
             setVariable("baseUrl", baseUrl)
         }

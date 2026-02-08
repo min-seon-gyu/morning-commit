@@ -28,6 +28,8 @@ import server.morningcommit.service.PostSearchService
 import java.net.URI
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.util.Date
+import kotlin.math.ceil
 
 @Configuration
 class BlogCrawlingJobConfig(
@@ -89,11 +91,7 @@ class BlogCrawlingJobConfig(
 
                 feed.entries
                     .filter { entry ->
-                        val rawDate = entry.publishedDate ?: entry.updatedDate
-                        val publishDate = rawDate?.toInstant()
-                            ?.atZone(ZoneId.systemDefault())
-                            ?.toLocalDateTime()
-
+                        val publishDate = toLocalDateTime(entry.publishedDate ?: entry.updatedDate)
                         publishDate != null && publishDate.isAfter(base)
                     }
                     .mapNotNull { entry ->
@@ -108,20 +106,18 @@ class BlogCrawlingJobConfig(
                                 htmlScraper.scrapeContent(link)
                             } catch (e: Exception) {
                                 log.warn("Failed to scrape content from $link: ${e.message}")
-
                                 entry.description?.value ?: ""
                             }
 
-                            val summary = summaryService.summarize(fullContent)
-
-                            val rawDate = entry.publishedDate ?: entry.updatedDate
-                            val publishDate = rawDate?.toInstant()
-                                ?.atZone(ZoneId.systemDefault())
-                                ?.toLocalDateTime()
+                            val analysisResult = summaryService.analyze(fullContent)
+                            val readingTimeMin = ceil(fullContent.length / 500.0).toInt().coerceAtLeast(1)
 
                             Post(
-                                title = entry.title ?: "Untitled", link = link, description = summary,
-                                publishDate = publishDate, blog = blogSource.blog
+                                title = entry.title ?: "Untitled", link = link, summary = analysisResult.summary,
+                                keyInsight = analysisResult.keyInsight, tags = analysisResult.tags,
+                                difficulty = analysisResult.difficulty, readingTimeMin = readingTimeMin,
+                                publishDate = toLocalDateTime(entry.publishedDate ?: entry.updatedDate),
+                                blog = blogSource.blog
                             )
                         } catch (e: Exception) {
                             log.error("Failed to process entry: ${entry.title}", e)
@@ -134,10 +130,13 @@ class BlogCrawlingJobConfig(
                     }
             } catch (e: Exception) {
                 log.error("Failed to process blog source: ${blogSource.blog.displayName}", e)
-
                 emptyList()
             }
         }
+    }
+
+    private fun toLocalDateTime(date: Date?): LocalDateTime? {
+        return date?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalDateTime()
     }
 
     @Bean

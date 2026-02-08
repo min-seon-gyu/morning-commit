@@ -19,15 +19,15 @@ class EmailConsumer(
         log.info("Received email request for: ${request.email}")
 
         try {
-            val posts = postRepository.findAllById(request.postIds)
+            val post = postRepository.findById(request.postId).orElse(null)
 
-            if (posts.isEmpty()) {
-                log.warn("No posts found for IDs: ${request.postIds}")
+            if (post == null) {
+                log.warn("Post not found for ID: ${request.postId}")
+
                 return
             }
 
-            emailService.sendNewsletter(request.email, posts, request.subscriberId)
-            log.info("Successfully processed email request for: ${request.email}")
+            emailService.sendNewsletter(request.email, post, request.subscriberId)
         } catch (e: Exception) {
             log.error("Failed to process email request for ${request.email}: ${e.message}", e)
             throw e
