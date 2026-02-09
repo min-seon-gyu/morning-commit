@@ -37,7 +37,7 @@ class JobScheduler(
         }
     }
 
-    @Scheduled(cron = "0 40 20 * * *")
+    @Scheduled(cron = "0 0 7 * * *")
     fun runEmailDeliveryJob() {
         try {
             val deliveryParams = JobParametersBuilder()
