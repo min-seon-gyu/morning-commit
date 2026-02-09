@@ -56,7 +56,9 @@ class SubscriberService(
 
         redisTemplate.delete("$KEY_PREFIX$email")
 
-        subscriberRepository.save(Subscriber(email = email))
+        val subscriber = subscriberRepository.findByEmail(email)
+
+        subscriber?.apply { isActive = true } ?: subscriberRepository.save(Subscriber(email = email))
 
         return true
     }
