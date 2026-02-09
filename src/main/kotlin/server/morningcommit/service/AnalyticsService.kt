@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import server.morningcommit.config.RedisConfig
 import server.morningcommit.repository.ClickLogRepository
+import server.morningcommit.repository.SubscriberRepository
 import server.morningcommit.service.dto.BlogClickCount
 import server.morningcommit.service.dto.DailyClickCount
 import server.morningcommit.service.dto.PostClickCount
@@ -13,7 +14,8 @@ import java.time.LocalDateTime
 @Service
 @Transactional(readOnly = true)
 class AnalyticsService(
-    private val clickLogRepository: ClickLogRepository
+    private val clickLogRepository: ClickLogRepository,
+    private val subscriberRepository: SubscriberRepository
 ) {
     sealed interface AnalyticsResult {
         data class Success(val data: AnalyticsDashboard) : AnalyticsResult
@@ -23,6 +25,7 @@ class AnalyticsService(
     data class AnalyticsDashboard(
         val totalClicks: Long,
         val uniqueClickers: Long,
+        val totalSubscribers: Long,
         val topPosts: List<PostClickCount>,
         val blogClicks: List<BlogClickCount>,
         val dailyTrend: List<DailyClickCount>,
@@ -48,10 +51,11 @@ class AnalyticsService(
             LocalDateTime.now().minusDays(30)
         )
         val uniqueClickers = clickLogRepository.countUniqueClickers()
+        val totalSubscribers = subscriberRepository.countByIsActiveTrue()
 
         return AnalyticsResult.Success(
             AnalyticsDashboard(
-                totalClicks = totalClicks, uniqueClickers = uniqueClickers, topPosts = topPosts,
+                totalClicks = totalClicks, uniqueClickers = uniqueClickers, totalSubscribers = totalSubscribers, topPosts = topPosts,
                 blogClicks = blogClicks, dailyTrend = dailyTrend,
                 maxPostClicks = topPosts.maxOfOrNull { it.clickCount } ?: 1L,
                 maxBlogClicks = blogClicks.maxOfOrNull { it.clickCount } ?: 1L,

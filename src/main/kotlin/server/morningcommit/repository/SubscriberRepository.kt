@@ -5,4 +5,5 @@ import server.morningcommit.domain.Subscriber
 
 interface SubscriberRepository : JpaRepository<Subscriber, Long> {
     fun findByEmail(email: String): Subscriber?
+    fun countByIsActiveTrue(): Long
 }
