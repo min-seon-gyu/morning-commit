@@ -78,7 +78,7 @@ class BlogCrawlingJobConfig(
 
     @Bean
     fun blogSourceProcessor(): ItemProcessor<BlogSource, List<Post>> {
-        val base = LocalDateTime.now().minusDays(3)
+        val base = LocalDateTime.now().minusDays(2)
 
         return ItemProcessor<BlogSource, List<Post>> { blogSource ->
             log.info("Processing blog: ${blogSource.blog.displayName}")
