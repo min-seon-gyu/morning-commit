@@ -2,7 +2,6 @@ package server.morningcommit.repository
 
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
-import org.springframework.data.repository.query.Param
 import server.morningcommit.domain.ClickLog
 import server.morningcommit.service.dto.BlogClickCount
 import server.morningcommit.service.dto.DailyClickCount
@@ -46,7 +45,7 @@ interface ClickLogRepository : JpaRepository<ClickLog, Long> {
         ORDER BY CAST(c.clickedAt AS LocalDate) ASC
         """
     )
-    fun findDailyClickCounts(@Param("since") since: LocalDateTime): List<DailyClickCount>
+    fun findDailyClickCounts(since: LocalDateTime): List<DailyClickCount>
 
     @Query("SELECT COUNT(c) FROM ClickLog c")
     fun countTotalClicks(): Long

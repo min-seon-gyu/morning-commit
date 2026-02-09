@@ -19,6 +19,7 @@ import server.morningcommit.domain.PostSendHistory
 import server.morningcommit.domain.Subscriber
 import server.morningcommit.email.EmailProducer
 import server.morningcommit.email.dto.EmailRequest
+import server.morningcommit.repository.PostSendHistoryRepository
 import server.morningcommit.service.PostService
 
 @Configuration
@@ -27,7 +28,8 @@ class EmailDeliveryJobConfig(
     private val transactionManager: PlatformTransactionManager,
     private val entityManagerFactory: EntityManagerFactory,
     private val postService: PostService,
-    private val emailProducer: EmailProducer
+    private val emailProducer: EmailProducer,
+    private val postSendHistoryRepository: PostSendHistoryRepository
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -69,18 +71,18 @@ class EmailDeliveryJobConfig(
                 return@ItemProcessor null
             }
 
-            val sentPostIds = subscriber.sendHistories.map { it.postId }.toSet()
+            val sentPostIds = postSendHistoryRepository.findPostIdsBySubscriberId(subscriber.id!!)
 
             var candidates = allPostIdSet - sentPostIds
 
             if (candidates.isEmpty()) {
-                subscriber.sendHistories.clear()
+                postSendHistoryRepository.deleteAllBySubscriberId(subscriber.id!!)
 
                 candidates = allPostIdSet
             }
 
             val selectedPostId = candidates.random()
-            subscriber.sendHistories.add(PostSendHistory(subscriber = subscriber, postId = selectedPostId))
+            postSendHistoryRepository.save(PostSendHistory(subscriber = subscriber, postId = selectedPostId))
 
             EmailRequest(subscriberId = subscriber.id!!, email = subscriber.email, postId = selectedPostId)
         }

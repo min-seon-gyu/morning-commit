@@ -84,6 +84,7 @@ class BlogCrawlingJobConfig(
             log.info("Processing blog: ${blogSource.blog.displayName}")
 
             try {
+                val existingLinks = postRepository.findLinksByBlog(blogSource.blog)
                 val feedUrl = URI(blogSource.rssUrl).toURL()
                 val feed = XmlReader(feedUrl).use { reader ->
                     SyndFeedInput().build(reader)
@@ -98,7 +99,7 @@ class BlogCrawlingJobConfig(
                         try {
                             val link = entry.link ?: return@mapNotNull null
 
-                            if (postRepository.existsByLink(link)) {
+                            if (link in existingLinks) {
                                 return@mapNotNull null
                             }
 

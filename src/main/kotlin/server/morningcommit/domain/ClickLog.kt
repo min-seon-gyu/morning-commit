@@ -12,7 +12,11 @@ import java.time.LocalDateTime
 @Entity
 @Table(
     name = "click_log",
-    indexes = [Index(name = "idx_click_log_target_url", columnList = "targetUrl")]
+    indexes = [
+        Index(name = "idx_click_log_target_url", columnList = "targetUrl"),
+        Index(name = "idx_click_log_clicked_at", columnList = "clickedAt"),
+        Index(name = "idx_click_log_subscriber_id", columnList = "subscriberId")
+    ]
 )
 class ClickLog(
     @Column(nullable = false)

@@ -13,6 +13,9 @@ interface PostRepository : JpaRepository<Post, Long> {
     @Query("SELECT p.link FROM Post p WHERE p.link IN :links")
     fun findExistingLinks(links: Collection<String>): Set<String>
 
+    @Query("SELECT p.link FROM Post p WHERE p.blog = :blog")
+    fun findLinksByBlog(blog: Blog): Set<String>
+
     fun findByBlog(blog: Blog, pageable: Pageable): Page<Post>
 
     @Query("SELECT p.id FROM Post p")

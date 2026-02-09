@@ -17,7 +17,11 @@ import java.time.LocalDateTime
 @Entity
 @Table(
     name = "post",
-    indexes = [Index(name = "idx_post_link", columnList = "link", unique = true)]
+    indexes = [
+        Index(name = "idx_post_link", columnList = "link", unique = true),
+        Index(name = "idx_post_blog_publish_date", columnList = "blog, publishDate"),
+        Index(name = "idx_post_publish_date", columnList = "publishDate")
+    ]
 )
 class Post(
     @Column(nullable = false)
