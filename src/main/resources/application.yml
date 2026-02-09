@@ -32,6 +32,8 @@ spring:
   # ==========================================
   elasticsearch:
     uris: http://${ELASTICSEARCH_HOST}:${ELASTICSEARCH_PORT}
+    username: elastic
+    password: ${ELASTIC_PASSWORD}
 
   # ==========================================
   # 4. RabbitMQ 설정
