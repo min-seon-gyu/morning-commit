@@ -32,7 +32,7 @@ class SummaryService(
                ADVANCED: deep dives into internals, performance optimization, complex architecture, distributed systems.
                EXPERT: cutting-edge research, low-level systems (kernel, compiler, JVM internals), novel algorithms, large-scale infrastructure design.
             5. "is_promotional": true if the article does NOT teach reusable technical knowledge. Judge by the MAIN PURPOSE.
-               true (filter out): recruitment/hiring, event/hackathon/workshop recaps, product/shopping recommendations, company/team/culture introductions, employee interviews, project retrospectives about teamwork (not tech), research/model showcases without implementation details, marketing/sales promotions, any non-technical content on tech blogs (lifestyle, hobbies, product curation, etc.).
+               true (filter out): recruitment/hiring, event/hackathon/workshop recaps, welcome kit unboxings/contents, onboarding processe, product/shopping recommendations, company/team/culture introductions, employee interviews, project retrospectives about teamwork (not tech), research/model showcases without implementation details, marketing/sales promotions, any non-technical content on tech blogs (lifestyle, hobbies, product curation, etc.).
                false (keep): articles teaching specific technology, architecture, algorithm, or engineering practice. A standard "we are hiring" footer common in Korean tech blogs does NOT make an article promotional — ignore it.
 
             Example format:
