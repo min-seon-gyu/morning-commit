@@ -79,17 +79,21 @@ services:
     container_name: morningcommit-es
     environment:
       - discovery.type=single-node
-      - xpack.security.enabled=false
+      - xpack.security.enabled=true
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.transport.ssl.enabled=false
       - ES_JAVA_OPTS=-Xms256m -Xmx256m
     ports:
       - "19200:9200"
     volumes:
       - es_data:/usr/share/elasticsearch/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      test: ["CMD-SHELL", "curl -s -u elastic:${ELASTIC_PASSWORD} http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 40s
     networks:
       - morningcommit-net
 
@@ -108,6 +112,22 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - morningcommit-net
+
+    # 6. Kibana
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.12.0
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD}
+    ports:
+      - "15601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
     networks:
       - morningcommit-net
 
