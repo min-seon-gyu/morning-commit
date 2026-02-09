@@ -56,7 +56,7 @@
                         <p class="text-sm text-slate-500">매일 아침, 기술 아티클</p>
                     </div>
                 </div>
-                <button onclick="openSubscribeModal()"
+                <button id="subscribeToggleBtn" onclick="handleSubscribeToggle()"
                         class="px-3 py-1.5 sm:px-5 sm:py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs sm:text-sm font-semibold rounded-full shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 transition-all duration-300 hover:-translate-y-0.5">
                     구독하기
                 </button>
@@ -395,6 +395,47 @@
     <script>
         let timerInterval = null;
 
+        function initSubscribeButton() {
+            const email = localStorage.getItem('subscribedEmail');
+            const btn = document.getElementById('subscribeToggleBtn');
+            if (email) {
+                btn.textContent = '구독취소';
+                btn.className = 'px-3 py-1.5 sm:px-5 sm:py-2.5 bg-gradient-to-r from-rose-500 to-red-600 text-white text-xs sm:text-sm font-semibold rounded-full shadow-lg shadow-rose-500/30 hover:shadow-xl hover:shadow-rose-500/40 transition-all duration-300 hover:-translate-y-0.5';
+            } else {
+                btn.textContent = '구독하기';
+                btn.className = 'px-3 py-1.5 sm:px-5 sm:py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs sm:text-sm font-semibold rounded-full shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 transition-all duration-300 hover:-translate-y-0.5';
+            }
+        }
+
+        function handleSubscribeToggle() {
+            const email = localStorage.getItem('subscribedEmail');
+            if (email) {
+                handleUnsubscribe(email);
+            } else {
+                openSubscribeModal();
+            }
+        }
+
+        function handleUnsubscribe(email) {
+            if (!confirm('구독을 취소하시겠습니까?')) return;
+
+            fetch('/api/subscribers?email=' + encodeURIComponent(email), { method: 'DELETE' })
+                .then(function (res) {
+                    if (res.ok) {
+                        localStorage.removeItem('subscribedEmail');
+                        initSubscribeButton();
+                        alert('구독이 취소되었습니다.');
+                    } else {
+                        alert('구독 취소에 실패했습니다. 다시 시도해주세요.');
+                    }
+                })
+                .catch(function () {
+                    alert('네트워크 오류가 발생했습니다.');
+                });
+        }
+
+        initSubscribeButton();
+
         function openSubscribeModal() {
             document.getElementById('subscribeModal').classList.remove('hidden');
             resetModal();
@@ -403,6 +444,7 @@
         function closeSubscribeModal() {
             document.getElementById('subscribeModal').classList.add('hidden');
             clearInterval(timerInterval);
+            initSubscribeButton();
         }
 
         function resetModal() {
@@ -561,6 +603,7 @@
             .then(function (result) {
                 if (result.status >= 200 && result.status < 300) {
                     clearInterval(timerInterval);
+                    localStorage.setItem('subscribedEmail', email);
                     document.getElementById('step2').classList.add('hidden');
                     document.getElementById('step3').classList.remove('hidden');
                     document.getElementById('successResult').classList.remove('hidden');
