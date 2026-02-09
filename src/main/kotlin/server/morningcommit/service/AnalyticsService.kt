@@ -15,7 +15,6 @@ import java.time.LocalDateTime
 class AnalyticsService(
     private val clickLogRepository: ClickLogRepository
 ) {
-
     sealed interface AnalyticsResult {
         data class Success(val data: AnalyticsDashboard) : AnalyticsResult
         data object NoData : AnalyticsResult
@@ -35,7 +34,7 @@ class AnalyticsService(
     @Cacheable(
         cacheNames = [RedisConfig.ANALYTICS_DASHBOARD],
         key = "'dashboard'",
-        unless = "#result instanceof T(server.morningcommit.service.AnalyticsService.AnalyticsResult.NoData)"
+        unless = "#result instanceof T(server.morningcommit.service.AnalyticsService\$AnalyticsResult\$NoData)"
     )
     fun getDashboard(): AnalyticsResult {
         val totalClicks = clickLogRepository.countTotalClicks()

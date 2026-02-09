@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestParam
 import server.morningcommit.domain.Blog
 import server.morningcommit.service.AnalyticsService
+import server.morningcommit.service.AnalyticsService.AnalyticsResult
 import server.morningcommit.service.PostService
 
 @Controller
@@ -39,11 +40,11 @@ class ViewController(
     @GetMapping("/analytics")
     fun analytics(model: Model): String {
         return when (val result = analyticsService.getDashboard()) {
-            is AnalyticsService.AnalyticsResult.Success -> {
+            is AnalyticsResult.Success -> {
                 model.addAttribute("dashboard", result.data)
                 "analytics"
             }
-            AnalyticsService.AnalyticsResult.NoData -> {
+            AnalyticsResult.NoData -> {
                 model.addAttribute("noData", true)
                 "analytics"
             }
