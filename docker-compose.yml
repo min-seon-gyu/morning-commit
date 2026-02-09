@@ -6,29 +6,30 @@ services:
     ports:
       - "18080:8080"
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
       # Database Config
-      - DB_URL=jdbc:mysql://mysql:3306/morningcommit?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
-      - DB_USERNAME=root
-      - DB_PASSWORD=1234
+      - DB_URL=${DB_URL}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
       # RabbitMQ Config
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USERNAME=guest
-      - RABBITMQ_PASSWORD=guest
+      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - RABBITMQ_PORT=${RABBITMQ_PORT}
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
       # Mail Config (SMTP)
       - MAIL_HOST=${MAIL_HOST}
       - MAIL_PORT=${MAIL_PORT}
       - MAIL_USERNAME=${MAIL_USERNAME}
       - MAIL_PASSWORD=${MAIL_PASSWORD}
       # Redis Config
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
       # Elasticsearch Config
-      - ELASTICSEARCH_HOST=elasticsearch
-      - ELASTICSEARCH_PORT=9200
+      - ELASTICSEARCH_HOST=${ELASTICSEARCH_HOST}
+      - ELASTICSEARCH_PORT=${ELASTICSEARCH_PORT}
       # Application Config
-      - APP_BASE_URL=https://morningcommit.store
+      - APP_BASE_URL=${APP_BASE_URL}
+      - APP_UNSUBSCRIBE_SECRET=${APP_UNSUBSCRIBE_SECRET}
       # OpenAI Config
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     depends_on:

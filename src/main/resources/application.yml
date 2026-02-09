@@ -7,9 +7,9 @@ spring:
   # ==========================================
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: ${DB_URL:jdbc:mysql://localhost:13306/morningcommit?serverTimezone=Asia/Seoul}
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:1234}
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
 
   jpa:
     hibernate:
@@ -24,30 +24,30 @@ spring:
   # ==========================================
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:16379}
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
 
   # ==========================================
   # 3. Elasticsearch 설정
   # ==========================================
   elasticsearch:
-    uris: http://${ELASTICSEARCH_HOST:localhost}:${ELASTICSEARCH_PORT:19200}
+    uris: http://${ELASTICSEARCH_HOST}:${ELASTICSEARCH_PORT}
 
   # ==========================================
   # 4. RabbitMQ 설정
   # ==========================================
   rabbitmq:
-    host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:15673}
-    username: ${RABBITMQ_USERNAME:guest}
-    password: ${RABBITMQ_PASSWORD:guest}
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
 
   # ==========================================
   # 5. 이메일 설정 (SMTP)
   # ==========================================
   mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
-    port: ${MAIL_PORT:465}
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
     username: ${MAIL_USERNAME}
     password: ${MAIL_PASSWORD}
     properties:
@@ -77,5 +77,5 @@ openai:
 # 8. 커스텀 설정 (Application)
 # ==========================================
 app:
-  base-url: ${APP_BASE_URL:http://localhost:18080}
-  unsubscribe-secret: ${UNSUBSCRIBE_SECRET:morning-commit-default-unsubscribe-secret-key}
+  base-url: ${APP_BASE_URL}
+  unsubscribe-secret: ${APP_UNSUBSCRIBE_SECRET}
