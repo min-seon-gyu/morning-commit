@@ -484,14 +484,13 @@
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({email: email})
             })
-            .then(function (res) { return res.json().then(function (data) { return {status: res.status, data: data}; }); })
-            .then(function (result) {
-                if (result.status === 409) {
-                    codeErrorEl.textContent = result.data.message;
+            .then(function (res) {
+                if (res.status === 409) {
+                    codeErrorEl.textContent = '이미 구독 중인 이메일입니다.';
                     codeErrorEl.classList.remove('hidden');
                     return;
                 }
-                if (result.status >= 400) {
+                if (res.status >= 400) {
                     codeErrorEl.textContent = '인증번호 발송에 실패했습니다. 재발송해주세요.';
                     codeErrorEl.classList.remove('hidden');
                 }
@@ -516,11 +515,10 @@
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({email: email})
             })
-            .then(function (res) { return res.json().then(function (data) { return {status: res.status, data: data}; }); })
-            .then(function (result) {
+            .then(function (res) {
                 resendBtn.disabled = false;
                 resendBtn.textContent = '인증번호 재발송';
-                if (result.status >= 400) {
+                if (res.status >= 400) {
                     codeErrorEl.textContent = '재발송에 실패했습니다.';
                     codeErrorEl.classList.remove('hidden');
                     return;
@@ -557,16 +555,15 @@
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({email: email, code: code})
             })
-            .then(function (res) { return res.json().then(function (data) { return {status: res.status, data: data}; }); })
-            .then(function (result) {
-                if (result.status >= 200 && result.status < 300) {
+            .then(function (res) {
+                if (res.ok) {
                     clearInterval(timerInterval);
                     document.getElementById('step2').classList.add('hidden');
                     document.getElementById('step3').classList.remove('hidden');
                     document.getElementById('successResult').classList.remove('hidden');
                 } else {
                     verifyBtn.disabled = false;
-                    codeErrorEl.textContent = result.data.message || '인증에 실패했습니다. 다시 시도해주세요.';
+                    codeErrorEl.textContent = '인증번호가 유효하지 않습니다.';
                     codeErrorEl.classList.remove('hidden');
                 }
             })

@@ -4,57 +4,51 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import server.morningcommit.controller.dto.SendVerificationRequest
+import server.morningcommit.controller.dto.UnsubscribeRequest
 import server.morningcommit.controller.dto.VerifyRequest
 import server.morningcommit.email.EmailService
 import server.morningcommit.service.SubscriberService
 import server.morningcommit.service.SubscriberService.UnsubscribeResult
+import server.morningcommit.service.UnsubscribeTokenService
 
 @RestController
 @RequestMapping("/api/subscribers")
 class SubscriberController(
     private val subscriberService: SubscriberService,
-    private val emailService: EmailService
+    private val emailService: EmailService,
+    private val unsubscribeTokenService: UnsubscribeTokenService
 ) {
 
     @PostMapping("/send-verification")
-    fun sendVerification(@RequestBody request: SendVerificationRequest): ResponseEntity<Map<String, String>> {
+    fun sendVerification(@RequestBody request: SendVerificationRequest): ResponseEntity<Void> {
         if (subscriberService.isAlreadyActive(request.email)) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(mapOf("message" to "이미 구독 중인 이메일입니다."))
+            return ResponseEntity.status(HttpStatus.CONFLICT).build()
         }
 
         val code = subscriberService.generateAndSave(request.email)
         emailService.sendVerificationEmail(request.email, code)
 
-        return ResponseEntity.ok(mapOf("message" to "인증번호가 발송되었습니다."))
+        return ResponseEntity.ok().build()
     }
 
     @PostMapping("/verify")
-    fun verify(@RequestBody request: VerifyRequest): ResponseEntity<Map<String, String>> {
+    fun verify(@RequestBody request: VerifyRequest): ResponseEntity<Void> {
         return if (subscriberService.verifyAndSubscribe(request.email, request.code)) {
-            ResponseEntity.status(HttpStatus.CREATED)
-                .body(mapOf("message" to "구독이 완료되었습니다."))
+            ResponseEntity.status(HttpStatus.CREATED).build()
         } else {
-            ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(mapOf("message" to "인증번호가 유효하지 않습니다."))
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         }
     }
 
-    @DeleteMapping
-    fun unsubscribe(@RequestParam email: String): ResponseEntity<Map<String, String>> {
-        return toUnsubscribeResponse(subscriberService.unsubscribe(email))
-    }
+    @PostMapping("/unsubscribe")
+    fun unsubscribeWithToken(@RequestBody request: UnsubscribeRequest): ResponseEntity<Void> {
+        if (!unsubscribeTokenService.validateToken(request.email, request.token)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
+        }
 
-    @GetMapping("/unsubscribe")
-    fun unsubscribeViaEmail(@RequestParam email: String): ResponseEntity<Map<String, String>> {
-        return toUnsubscribeResponse(subscriberService.unsubscribe(email))
-    }
-
-    private fun toUnsubscribeResponse(result: UnsubscribeResult): ResponseEntity<Map<String, String>> {
-        return when (result) {
-            UnsubscribeResult.Success -> ResponseEntity.ok(mapOf("message" to "구독이 취소되었습니다."))
-            UnsubscribeResult.NotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(mapOf("message" to "해당 이메일의 구독자를 찾을 수 없습니다."))
+        return when (subscriberService.unsubscribe(request.email)) {
+            UnsubscribeResult.Success -> ResponseEntity.ok().build()
+            UnsubscribeResult.NotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND).build()
         }
     }
 }

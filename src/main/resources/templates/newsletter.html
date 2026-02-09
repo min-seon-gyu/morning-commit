@@ -183,7 +183,7 @@
                                 </tr>
                                 <tr>
                                     <td align="center" style="padding-top: 16px;">
-                                        <a th:href="@{${baseUrl}/api/subscribers/unsubscribe(email=${subscriberEmail})}" style="font-size: 13px; color: #64748B; text-decoration: underline;">구독 취소</a>
+                                        <a th:href="${baseUrl + '/unsubscribe?email=' + subscriberEmail + '&token=' + unsubscribeToken}" style="font-size: 13px; color: #64748B; text-decoration: underline;">구독 취소</a>
                                     </td>
                                 </tr>
                                 <tr>

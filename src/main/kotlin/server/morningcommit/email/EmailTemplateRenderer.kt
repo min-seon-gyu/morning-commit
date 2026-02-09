@@ -5,10 +5,12 @@ import org.springframework.stereotype.Component
 import org.thymeleaf.TemplateEngine
 import org.thymeleaf.context.Context
 import server.morningcommit.email.dto.TrackedPost
+import server.morningcommit.service.UnsubscribeTokenService
 
 @Component
 class EmailTemplateRenderer(
     private val templateEngine: TemplateEngine,
+    private val unsubscribeTokenService: UnsubscribeTokenService,
     @Value("\${app.base-url}")
     private val baseUrl: String
 ) {
@@ -18,6 +20,7 @@ class EmailTemplateRenderer(
             setVariable("post", post)
             setVariable("subscriberEmail", subscriberEmail)
             setVariable("baseUrl", baseUrl)
+            setVariable("unsubscribeToken", unsubscribeTokenService.generateToken(subscriberEmail))
         }
 
         return templateEngine.process("newsletter", context)

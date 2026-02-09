@@ -11,11 +11,13 @@ import server.morningcommit.domain.Blog
 import server.morningcommit.service.AnalyticsService
 import server.morningcommit.service.AnalyticsService.AnalyticsResult
 import server.morningcommit.service.PostService
+import server.morningcommit.service.UnsubscribeTokenService
 
 @Controller
 class ViewController(
     private val postService: PostService,
-    private val analyticsService: AnalyticsService
+    private val analyticsService: AnalyticsService,
+    private val unsubscribeTokenService: UnsubscribeTokenService
 ) {
 
     @GetMapping("/")
@@ -49,5 +51,20 @@ class ViewController(
                 "analytics"
             }
         }
+    }
+
+    @GetMapping("/unsubscribe")
+    fun unsubscribeConfirm(@RequestParam email: String, @RequestParam token: String, model: Model): String {
+        if (!unsubscribeTokenService.validateToken(email, token)) {
+            model.addAttribute("state", "error")
+
+            return "unsubscribe"
+        }
+
+        model.addAttribute("state", "confirm")
+        model.addAttribute("email", email)
+        model.addAttribute("token", token)
+
+        return "unsubscribe"
     }
 }

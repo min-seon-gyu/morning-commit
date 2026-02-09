@@ -54,9 +54,6 @@ spring:
       mail:
         smtp:
           auth: true
-          ssl:
-            enable: true
-            trust: "*"
           starttls:
             enable: true
 
@@ -81,3 +78,4 @@ openai:
 # ==========================================
 app:
   base-url: ${APP_BASE_URL:http://localhost:18080}
+  unsubscribe-secret: ${UNSUBSCRIBE_SECRET:morning-commit-default-unsubscribe-secret-key}
