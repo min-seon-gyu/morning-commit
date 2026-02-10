@@ -1,6 +1,7 @@
 package server.morningcommit.domain
 
 import org.springframework.data.annotation.Id
+import org.springframework.data.elasticsearch.annotations.DateFormat
 import org.springframework.data.elasticsearch.annotations.Document
 import org.springframework.data.elasticsearch.annotations.Field
 import org.springframework.data.elasticsearch.annotations.FieldType
@@ -31,16 +32,16 @@ data class PostDocument(
     @Field(type = FieldType.Integer)
     val readingTimeMin: Int = 0,
 
-    @Field(type = FieldType.Date)
+    @Field(type = FieldType.Date, format = [DateFormat.date_hour_minute_second, DateFormat.date])
     val publishDate: LocalDateTime?,
 
     @Field(type = FieldType.Keyword)
     val blog: String,
 
-    @Field(type = FieldType.Date)
+    @Field(type = FieldType.Date, format = [DateFormat.date_hour_minute_second, DateFormat.date])
     val createdAt: LocalDateTime,
 
-    @Field(type = FieldType.Date)
+    @Field(type = FieldType.Date, format = [DateFormat.date_hour_minute_second, DateFormat.date])
     val updatedAt: LocalDateTime
 ) {
     companion object {
