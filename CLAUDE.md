@@ -80,14 +80,15 @@ emailDeliveryJob (Daily at 7 AM)
     │       ├─► If empty: Reset history, use all posts
     │       ├─► Random select one post
     │       └─► Save to PostSendHistory
-    └─► Publish EmailRequest to RabbitMQ
+    └─► Publish EmailRequest to RabbitMQ (RetryTemplate retries on failure)
             │
             └─► EmailConsumer (async)
                     ├─► Fetch Post from DB
                     ├─► EmailUrlGenerator: Transform links to tracking URLs
                     ├─► EmailTemplateRenderer: Render Thymeleaf template (Korean)
                     │       └─► Embeds HMAC unsubscribe token via UnsubscribeTokenService
-                    └─► EmailSender: Send via SMTP
+                    ├─► EmailSender: Send via SMTP
+                    └─► On failure → retry 3 times → DLQ (email-queue-dlq)
 
 Click Tracking Flow
     │
@@ -99,7 +100,8 @@ Click Tracking Flow
             │
             └─► TrackingConsumer (async)
                     ├─► Save ClickLog entity to DB
-                    └─► Clear analytics cache
+                    ├─► Clear analytics cache
+                    └─► On failure → retry 3 times → DLQ (tracking-queue-dlq)
 
 Email Verification Flow
     │
@@ -215,6 +217,16 @@ Each subscriber receives one random post per day without duplicates until all po
 - Queues:
   - `email-queue` (Routing Key: `send-email`) - Email delivery
   - `tracking-queue` (Routing Key: `tracking-log`) - Click tracking
+- Dead Letter Exchange: `email-dlx` (Direct)
+- Dead Letter Queues:
+  - `email-queue-dlq` (Routing Key: `send-email`) - Failed email messages
+  - `tracking-queue-dlq` (Routing Key: `tracking-log`) - Failed tracking messages
+- Message Loss Prevention:
+  - Publisher Confirm (`correlated`) + Returns: Broker delivery acknowledgement with NACK/return logging
+  - Publisher Retry: `RetryTemplate` on `RabbitTemplate` (3 attempts, exponential backoff 1s → 2s → 4s)
+  - Consumer Retry: Spring listener retry (3 attempts, exponential backoff 1s → 2s → 4s)
+  - DLQ: After retry exhaustion, rejected messages routed to DLQ via `x-dead-letter-exchange`
+  - Messages are persistent by default (`Jackson2JsonMessageConverter` sets `deliveryMode=PERSISTENT`)
 
 ### Scheduler
 - `blogCrawlingJob`: `0 0 1 * * *` (Daily at 1 AM)

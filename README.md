@@ -105,13 +105,14 @@ emailDeliveryJob
     │       ├─► 후보 없으면 → 히스토리 초기화, 전체 사용
     │       ├─► 후보 중 랜덤 1개 선택
     │       └─► PostSendHistory에 저장
-    └─► EmailRequest를 RabbitMQ에 발행
+    └─► EmailRequest를 RabbitMQ에 발행 (실패 시 RetryTemplate 재시도)
             │
             └─► EmailConsumer (비동기)
                     ├─► DB에서 Post 조회
                     ├─► EmailUrlGenerator: 트래킹 URL 변환
                     ├─► EmailTemplateRenderer: 템플릿 렌더링 + 구독해지 토큰 삽입
-                    └─► EmailSender: SMTP 발송
+                    ├─► EmailSender: SMTP 발송
+                    └─► 실패 시 → 재시도 3회 → DLQ(email-queue-dlq)로 이동
 ```
 
 ### 클릭 트래킹
@@ -125,7 +126,8 @@ emailDeliveryJob
             │
             └─► TrackingConsumer (비동기)
                     ├─► ClickLog 엔티티 DB 저장
-                    └─► 분석 캐시 초기화
+                    ├─► 분석 캐시 초기화
+                    └─► 실패 시 → 재시도 3회 → DLQ(tracking-queue-dlq)로 이동
 ```
 
 ### 이메일 인증 & 구독 해지
@@ -269,6 +271,17 @@ OpenAI GPT가 각 아티클을 분석하여 다음을 추출합니다:
 | Exchange | `email-exchange` (Direct) | 공통 Exchange |
 | Queue | `email-queue` (Routing Key: `send-email`) | 이메일 발송 |
 | Queue | `tracking-queue` (Routing Key: `tracking-log`) | 클릭 트래킹 |
+| DLX | `email-dlx` (Direct) | Dead Letter Exchange |
+| DLQ | `email-queue-dlq` (Routing Key: `send-email`) | 이메일 발송 실패 메시지 보관 |
+| DLQ | `tracking-queue-dlq` (Routing Key: `tracking-log`) | 클릭 트래킹 실패 메시지 보관 |
+
+**메시지 유실 방지:**
+
+- **Publisher Confirm/Return**: 브로커 수신 확인 (NACK/라우팅 실패 시 경고 로그)
+- **Publisher Retry**: `RetryTemplate`로 송신 실패 시 자동 재시도 (최대 3회, 1s → 2s → 4s)
+- **Consumer Retry**: 수신 처리 실패 시 자동 재시도 (최대 3회, 1s → 2s → 4s)
+- **DLQ**: 재시도 소진 후 메시지를 Dead Letter Queue로 이동하여 보관
+- **메시지 영속성**: `Jackson2JsonMessageConverter` 기본 `deliveryMode=PERSISTENT`
 
 ### 분석 대시보드
 
