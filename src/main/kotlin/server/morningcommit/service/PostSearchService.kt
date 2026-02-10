@@ -7,13 +7,11 @@ import org.springframework.stereotype.Service
 import server.morningcommit.domain.Blog
 import server.morningcommit.domain.Post
 import server.morningcommit.domain.PostDocument
-import server.morningcommit.repository.PostRepository
 import server.morningcommit.repository.PostSearchRepository
 
 @Service
 class PostSearchService(
-    private val postSearchRepository: PostSearchRepository,
-    private val postRepository: PostRepository
+    private val postSearchRepository: PostSearchRepository
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -32,24 +30,5 @@ class PostSearchService(
         val documents = posts.map { PostDocument.from(it) }
 
         postSearchRepository.saveAll(documents)
-    }
-
-    fun reindexAll(): Long {
-        val allPosts = postRepository.findAll()
-        if (allPosts.isEmpty()) return 0
-
-        val documents = allPosts.map { PostDocument.from(it) }
-        postSearchRepository.saveAll(documents)
-
-        log.info("Reindexed {} posts to Elasticsearch", documents.size)
-        return documents.size.toLong()
-    }
-
-    fun deleteAll(): Long {
-        val count = postSearchRepository.count()
-        postSearchRepository.deleteAll()
-
-        log.info("Deleted {} documents from Elasticsearch", count)
-        return count
     }
 }
