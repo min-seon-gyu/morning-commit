@@ -9,18 +9,18 @@ import org.springframework.data.elasticsearch.annotations.Setting
 import java.time.LocalDateTime
 
 @Document(indexName = "posts")
-@Setting(shards = 1, replicas = 0)
+@Setting(shards = 1, replicas = 0, settingPath = "elasticsearch-settings.json")
 data class PostDocument(
     @Id
     val id: String,
 
-    @Field(type = FieldType.Text, analyzer = "standard")
+    @Field(type = FieldType.Text, analyzer = "nori_analyzer")
     val title: String,
 
     @Field(type = FieldType.Keyword)
     val link: String,
 
-    @Field(type = FieldType.Text, analyzer = "standard")
+    @Field(type = FieldType.Text, analyzer = "nori_analyzer")
     val summary: List<String> = emptyList(),
 
     @Field(type = FieldType.Keyword)

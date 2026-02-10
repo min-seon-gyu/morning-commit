@@ -12,7 +12,7 @@ interface PostSearchRepository : ElasticsearchRepository<PostDocument, String> {
         {
             "multi_match": {
                 "query": "?0",
-                "fields": ["title^2", "tags"],
+                "fields": ["title^3", "summary", "tags^2"],
                 "type": "best_fields"
             }
         }
@@ -26,7 +26,7 @@ interface PostSearchRepository : ElasticsearchRepository<PostDocument, String> {
                     {
                         "multi_match": {
                             "query": "?0",
-                            "fields": ["title^2", "tags"],
+                            "fields": ["title^3", "summary", "tags^2"],
                             "type": "best_fields"
                         }
                     },
@@ -40,4 +40,20 @@ interface PostSearchRepository : ElasticsearchRepository<PostDocument, String> {
         }
     """)
     fun searchByKeywordAndBlog(keyword: String, blog: String, pageable: Pageable): Page<PostDocument>
+
+    @Query("""
+        {
+            "match_all": {}
+        }
+    """)
+    fun findAllDocuments(pageable: Pageable): Page<PostDocument>
+
+    @Query("""
+        {
+            "term": {
+                "blog": "?0"
+            }
+        }
+    """)
+    fun findAllByBlog(blog: String, pageable: Pageable): Page<PostDocument>
 }

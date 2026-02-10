@@ -76,7 +76,7 @@ services:
 
   # 4. Elasticsearch
   elasticsearch:
-    image: elasticsearch:8.12.0
+    build: ./docker/elasticsearch
     container_name: morningcommit-es
     environment:
       - discovery.type=single-node

@@ -1,0 +1,11 @@
+{
+  "analysis": {
+    "analyzer": {
+      "nori_analyzer": {
+        "type": "custom",
+        "tokenizer": "nori_tokenizer",
+        "filter": ["nori_readingform", "lowercase"]
+      }
+    }
+  }
+}

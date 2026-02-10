@@ -18,10 +18,13 @@ class PostSearchService(
     private val log = LoggerFactory.getLogger(javaClass)
 
     fun search(keyword: String, blog: Blog?, pageable: Pageable): Page<PostDocument> {
-        return if (blog != null) {
-            postSearchRepository.searchByKeywordAndBlog(keyword, blog.name, pageable)
-        } else {
-            postSearchRepository.searchByKeyword(keyword, pageable)
+        val isBlank = keyword.isBlank()
+
+        return when {
+            isBlank && blog != null -> postSearchRepository.findAllByBlog(blog.name, pageable)
+            isBlank -> postSearchRepository.findAllDocuments(pageable)
+            blog != null -> postSearchRepository.searchByKeywordAndBlog(keyword, blog.name, pageable)
+            else -> postSearchRepository.searchByKeyword(keyword, pageable)
         }
     }
 
