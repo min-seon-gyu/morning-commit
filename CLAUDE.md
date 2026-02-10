@@ -20,6 +20,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Clean build
 ./gradlew clean build
 
+# Lint check (ktlint)
+./gradlew ktlintCheck
+
 # Docker (all infrastructure services)
 docker-compose up -d
 ```
@@ -30,10 +33,11 @@ MorningCommit is a daily tech blog newsletter service that:
 1. Crawls RSS feeds from tech blogs
 2. Scrapes full article content
 3. Summarizes using OpenAI GPT (filters out promotional content)
-4. Indexes posts into Elasticsearch for full-text search
+4. Indexes posts into Elasticsearch for full-text Korean search (nori analyzer)
 5. Delivers personalized newsletters via email
 6. Tracks link clicks for analytics
 7. Supports email-verified subscriber signup
+8. Provides secure HMAC-based unsubscribe links
 
 ## Tech Stack
 
@@ -47,7 +51,9 @@ MorningCommit is a daily tech blog newsletter service that:
 - **Rome** for RSS/Atom parsing
 - **Jsoup** for HTML scraping
 - **Redis** for caching (dashboard, post listings, search results) and email verification codes
-- **Elasticsearch 8.12.0** for full-text post search
+- **Elasticsearch 8.12.0** with nori Korean analyzer for full-text post search
+- **Kibana 8.12.0** for Elasticsearch visualization
+- **ktlint** for Kotlin code style enforcement (disabled rules: `import-ordering`, `no-wildcard-imports`, `filename`, `indent`, `parameter-list-wrapping`)
 
 ## Architecture
 
@@ -56,10 +62,11 @@ blogCrawlingJob (Daily at 1 AM)
     │
     ├─► Read active BlogSource entities
     ├─► Fetch RSS feeds (Rome)
-    ├─► Filter recent posts
+    ├─► Filter recent posts (last 2 days)
     ├─► Scrape full content (Jsoup)
     ├─► Summarize & analyze (OpenAI via Feign)
     │       └─► Promotional content filtered out
+    │       └─► Extracts: summary, tags, difficulty, keyInsight, readingTimeMin
     ├─► Batch save Post entities (pre-filtered duplicates via findExistingLinks)
     └─► Index saved posts to Elasticsearch
 
@@ -77,9 +84,10 @@ emailDeliveryJob (Daily at 7 AM)
             │
             └─► EmailConsumer (async)
                     ├─► Fetch Post from DB
-                    ├─► Transform links to tracking URLs
-                    ├─► Render Thymeleaf template (Korean)
-                    └─► Send via SMTP
+                    ├─► EmailUrlGenerator: Transform links to tracking URLs
+                    ├─► EmailTemplateRenderer: Render Thymeleaf template (Korean)
+                    │       └─► Embeds HMAC unsubscribe token via UnsubscribeTokenService
+                    └─► EmailSender: Send via SMTP
 
 Click Tracking Flow
     │
@@ -98,7 +106,20 @@ Email Verification Flow
     ├─► POST /api/subscribers/send-verification
     │       └─► Generate 6-digit code → Store in Redis (5-min TTL) → Send via email
     └─► POST /api/subscribers/verify
-            └─► Validate code from Redis → Create active Subscriber
+            └─► Validate code from Redis → Create active Subscriber (or reactivate existing)
+
+Unsubscribe Flow (HMAC Token-based)
+    │
+    ├─► Email newsletter contains unsubscribe link:
+    │       GET /unsubscribe?email={email}&token={hmac_token}
+    │           └─► ViewController validates token via UnsubscribeTokenService
+    │               └─► Renders unsubscribe.html confirmation page
+    │
+    └─► User confirms unsubscription:
+            POST /api/subscribers/unsubscribe
+                Body: { email, token }
+                └─► SubscriberController validates HMAC token
+                    └─► subscriberService.unsubscribe(email) → marks isActive=false
 ```
 
 ## Package Structure
@@ -112,26 +133,30 @@ server.morningcommit
 ├── scheduler/        # @Scheduled job orchestration (JobScheduler)
 ├── scraper/          # HtmlScraper (Jsoup)
 ├── controller/
-│   ├── dto/          # SendVerificationRequest, VerifyRequest
-│   ├── ViewController       # Web UI (posts, analytics)
+│   ├── dto/          # SendVerificationRequest, VerifyRequest, UnsubscribeRequest
+│   ├── ViewController       # Web UI (posts, analytics, unsubscribe confirmation)
 │   ├── TrackingController   # Click tracking redirect
 │   ├── SearchController     # Elasticsearch search endpoint
-│   └── SubscriberController # Email verification & subscription management
+│   └── SubscriberController # Email verification, subscription, unsubscription
 ├── ai/
 │   ├── client/       # OpenAiClient (Feign)
 │   ├── dto/          # ChatCompletion DTOs
 │   └── service/
 │       ├── SummaryService        # OpenAI summarization + promotional analysis
-│       └── dto/BlogAnalysisResult # Summary, tags, difficulty, isPromotional
+│       └── dto/BlogAnalysisResult # Summary, tags, difficulty, keyInsight, isPromotional
 ├── email/
-│   ├── dto/          # EmailRequest, ClickLogEvent, TrackedPost
-│   ├── EmailService  # Thymeleaf + JavaMailSender
-│   ├── EmailProducer # RabbitMQ publisher
-│   ├── EmailConsumer # RabbitMQ listener
-│   └── TrackingConsumer # Click tracking listener (clears analytics cache)
-├── service/          # AnalyticsService, TrackingService, PostService,
-│   │                 # PostSearchService, SubscriberService, BlogSourceService
-│   └── dto/          # PostClickCount, BlogClickCount, DailyClickCount, AnalyticsDashboard
+│   ├── dto/          # EmailRequest, ClickLogEvent, TrackedPost (includes keyInsight)
+│   ├── EmailService          # Orchestrator: delegates to Sender, Renderer, UrlGenerator
+│   ├── EmailSender           # SMTP sending via JavaMailSender
+│   ├── EmailTemplateRenderer # Thymeleaf rendering + unsubscribe token embedding
+│   ├── EmailUrlGenerator     # Tracking URL generation
+│   ├── EmailProducer         # RabbitMQ publisher
+│   ├── EmailConsumer         # RabbitMQ listener
+│   └── TrackingConsumer      # Click tracking listener (clears analytics cache)
+├── service/          # AnalyticsService (contains nested AnalyticsDashboard), TrackingService,
+│   │                 # PostService, PostSearchService, SubscriberService, BlogSourceService,
+│   │                 # UnsubscribeTokenService (HMAC-SHA256 token generation/validation)
+│   └── dto/          # PostClickCount, BlogClickCount, DailyClickCount
 └── config/           # RabbitMqConfig, RedisConfig, JpaConfig, FeignConfig,
                       # ElasticsearchConfig, SchedulingConfig, StringListConverter, RestPage
 ```
@@ -144,9 +169,9 @@ KAKAO_TECH, KAKAO_PAY, TOSS_TECH, WOOWA_BROS, LINE_ENGINEERING, HYPERCONNECT_TEC
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `db.url` | `jdbc:mysql://localhost:13306/morningcommit` | MySQL connection URL |
-| `db.username` | `root` | MySQL username |
-| `db.password` | `1234` | MySQL password |
+| `DB_URL` | `jdbc:mysql://localhost:13306/morningcommit` | MySQL connection URL |
+| `DB_USERNAME` | `root` | MySQL username |
+| `DB_PASSWORD` | `1234` | MySQL password |
 | `OPENAI_API_KEY` | - | OpenAI API key for summarization |
 | `RABBITMQ_HOST` | `localhost` | RabbitMQ host |
 | `RABBITMQ_PORT` | `15673` | RabbitMQ port |
@@ -156,11 +181,13 @@ KAKAO_TECH, KAKAO_PAY, TOSS_TECH, WOOWA_BROS, LINE_ENGINEERING, HYPERCONNECT_TEC
 | `MAIL_PORT` | `465` | SMTP port |
 | `MAIL_USERNAME` | - | SMTP username |
 | `MAIL_PASSWORD` | - | SMTP password |
-| `app.base-url` | `http://localhost:18080` | Base URL for click tracking and unsubscribe links |
+| `APP_BASE_URL` | `http://localhost:18080` | Base URL for click tracking and unsubscribe links |
+| `APP_UNSUBSCRIBE_SECRET` | - | HMAC-SHA256 secret for unsubscribe token generation |
 | `REDIS_HOST` | `localhost` | Redis host |
 | `REDIS_PORT` | `16379` | Redis port |
 | `ELASTICSEARCH_HOST` | `localhost` | Elasticsearch host |
 | `ELASTICSEARCH_PORT` | `19200` | Elasticsearch port |
+| `ELASTIC_PASSWORD` | - | Elasticsearch xpack security password |
 
 ## Key Components
 
@@ -194,29 +221,34 @@ Each subscriber receives one random post per day without duplicates until all po
 - `emailDeliveryJob`: `0 0 7 * * *` (Daily at 7 AM)
 
 ### Web UI
-- `GET /` - Post listing with pagination (9 items/page), blog filtering, and subscription signup
-- `GET /analytics` - Analytics dashboard with click statistics and trends
+- `GET /` - Post listing with pagination (9 items/page), blog filtering, subscription signup, and hero section ("AI가 요약한 기술 블로그")
+- `GET /analytics` - Analytics dashboard with click statistics, subscriber count, and trends
 - `GET /search?keyword=&blog=` - Full-text search with optional blog filter
+- `GET /unsubscribe?email=&token=` - Unsubscribe confirmation page (HMAC token validated)
 - Uses Thymeleaf + Tailwind CSS
+- Post cards display reading time and difficulty badges
 
 ### Email Verification & Subscription
 - `POST /api/subscribers/send-verification` - Sends 6-digit verification code via email (Redis, 5-min TTL)
-- `POST /api/subscribers/verify` - Verifies code and creates active subscriber
-- `DELETE /api/subscribers?email=` - Unsubscribes user
-- `GET /api/subscribers/unsubscribe?email=` - Unsubscribe via link
+- `POST /api/subscribers/verify` - Verifies code and creates active subscriber (or reactivates existing)
+- `POST /api/subscribers/unsubscribe` - Validates HMAC token and marks subscriber inactive
 
 ### Full-Text Search (Elasticsearch)
-- `PostDocument` maps Post entity to Elasticsearch index
-- Multi-field search: title (boosted x2), tags
-- Blog-specific filtering via compound queries
+- `PostDocument` maps Post entity to Elasticsearch index with nori Korean analyzer
+- Custom analyzer config in `src/main/resources/elasticsearch-settings.json` (nori_tokenizer, nori_readingform, lowercase)
+- Multi-field search: title (boosted x3), summary, tags (boosted x2)
+- 4 search modes: all posts, keyword only, blog filter only, keyword + blog filter
+- `findAllDocuments(pageable)` for browsing without keyword
+- `findAllByBlog(blog, pageable)` for blog-specific listing
 - Results paginated (9 items/page)
 - Indexed automatically after blog crawling job
 
 ### Analytics Dashboard
-- Summary cards: total clicks, unique clickers, top blog, clicked posts count
-- Top 10 posts visualization by click count
+- Summary cards: total clicks, unique clickers, top blog, clicked posts count, total subscribers
+- Top 10 posts visualization by click count (with max values for percentage bars)
 - Blog popularity breakdown
 - 30-day daily trend chart
+- `AnalyticsDashboard` is a nested data class inside `AnalyticsService`
 - Uses sealed interface `AnalyticsResult` (Success/NoData) for type-safe error handling
 
 ### Redis Caching
@@ -232,15 +264,48 @@ Each subscriber receives one random post per day without duplicates until all po
 - Click events stored in `ClickLog` entity for analytics
 - Uses sealed interface `TrackResult` (Success/InvalidUrl) for type-safe results
 
+### Unsubscribe (HMAC Token-based)
+- `UnsubscribeTokenService` generates/validates HMAC-SHA256 tokens using `app.unsubscribe-secret`
+- Tokens are stateless and non-expiring (unlike Redis-based verification codes)
+- Newsletter emails embed unsubscribe links with pre-signed tokens
+- Two-step flow: GET renders confirmation page, POST executes unsubscription
+
+### Email Service Architecture
+`EmailService` is an orchestrator that delegates to:
+- `EmailUrlGenerator` - Transforms post links into tracking URLs
+- `EmailTemplateRenderer` - Renders Thymeleaf newsletter template with unsubscribe token
+- `EmailSender` - Sends email via JavaMailSender SMTP
+
 ## Docker Infrastructure
 
-All services are orchestrated via `docker-compose.yml`:
+All services are orchestrated via `docker-compose.yml` on a `morningcommit-net` bridge network:
 - **MySQL** (port 13306) with health check
 - **Redis** (port 16379)
-- **Elasticsearch 8.12.0** (port 19200) with health check, single-node mode
+- **Elasticsearch 8.12.0** (port 19200) - Custom image with nori plugin (`docker/elasticsearch/Dockerfile`), xpack security enabled, JVM heap 256MB
+- **Kibana 8.12.0** (port 15601) - Connected to Elasticsearch
 - **RabbitMQ** (port 15673, management UI on 25672) with health check
 - **Spring Boot app** (port 18080) depends on all services being healthy
 - Persistent volumes: `mysql_data`, `es_data`
+
+## Post Entity Fields
+
+Key fields on the `Post` entity:
+- `title`, `link`, `content`, `summary` - Core article data
+- `tags: List<String>` - AI-extracted tags
+- `difficulty: String` - Article difficulty level (BEGINNER, INTERMEDIATE, ADVANCED, EXPERT)
+- `keyInsight: String?` - AI-extracted key insight from the article
+- `readingTimeMin: Int` - Estimated reading time in minutes
+- `blog: Blog` - Source blog enum
+- `isPromotional` - Filtered out during crawling
+
+## Templates
+
+- `index.html` - Main post listing page with hero section
+- `search.html` - Search results page
+- `analytics.html` - Analytics dashboard
+- `newsletter.html` - Email newsletter template
+- `unsubscribe.html` - Unsubscribe confirmation page
+- `verification.html` - Email verification code template
 
 ## Code Conventions
 
