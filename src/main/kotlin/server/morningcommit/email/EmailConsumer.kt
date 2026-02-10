@@ -19,12 +19,8 @@ class EmailConsumer(
         log.info("Received email request for: ${request.email}")
 
         try {
-            val post = postRepository.findById(request.postId).orElse(null)
-
-            if (post == null) {
-                log.warn("Post not found for ID: ${request.postId}")
-
-                return
+            val post = postRepository.findById(request.postId).orElseThrow {
+                IllegalStateException("Post not found for ID: ${request.postId}")
             }
 
             emailService.sendNewsletter(request.email, post, request.subscriberId)
