@@ -17,7 +17,7 @@ class TrackingConsumer(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    @RabbitListener(queues = [RabbitMqConfig.TRACKING_QUEUE_NAME])
+    @RabbitListener(queues = [RabbitMqConfig.TRACKING_QUEUE_NAME], concurrency = "2-5")
     fun handleClickLogEvent(event: ClickLogEvent) {
         try {
             val clickLog = ClickLog(

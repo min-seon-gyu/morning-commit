@@ -14,7 +14,7 @@ class EmailConsumer(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    @RabbitListener(queues = [RabbitMqConfig.QUEUE_NAME])
+    @RabbitListener(queues = [RabbitMqConfig.QUEUE_NAME], concurrency = "3-10")
     fun handleEmailRequest(request: EmailRequest) {
         log.info("Received email request for: ${request.email}")
 
