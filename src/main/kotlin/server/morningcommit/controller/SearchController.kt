@@ -17,7 +17,7 @@ class SearchController(
 
     @GetMapping("/search")
     fun search(
-        @RequestParam keyword: String,
+        @RequestParam(required = false, defaultValue = "") keyword: String,
         @RequestParam(required = false) blog: Blog?,
         @PageableDefault(size = 9, sort = ["publishDate"], direction = Sort.Direction.DESC) pageable: Pageable,
         model: Model
