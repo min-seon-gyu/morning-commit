@@ -13,7 +13,8 @@ interface PostSearchRepository : ElasticsearchRepository<PostDocument, String> {
             "multi_match": {
                 "query": "?0",
                 "fields": ["title^3", "summary", "tags^2"],
-                "type": "best_fields"
+                "type": "best_fields",
+                "fuzziness": "AUTO"
             }
         }
     """)
@@ -27,7 +28,8 @@ interface PostSearchRepository : ElasticsearchRepository<PostDocument, String> {
                         "multi_match": {
                             "query": "?0",
                             "fields": ["title^3", "summary", "tags^2"],
-                            "type": "best_fields"
+                            "type": "best_fields",
+                            "fuzziness": "AUTO"
                         }
                     },
                     {
