@@ -1,10 +1,31 @@
 {
   "analysis": {
+    "tokenizer": {
+      "nori_mixed_tokenizer": {
+        "type": "nori_tokenizer",
+        "decompound_mode": "mixed"
+      }
+    },
+    "filter": {
+      "nori_pos_filter": {
+        "type": "nori_part_of_speech",
+        "stoptags": [
+          "E", "IC", "J", "MAG", "MAJ", "MM", "SP", "SSC", "SSO", "SC", "SE", "XPN", "XSA", "XSN", "XSV", "UNA", "NA", "VSV"
+        ]
+      },
+      "nori_reading_filter": {
+        "type": "nori_readingform"
+      }
+    },
     "analyzer": {
       "nori_analyzer": {
         "type": "custom",
-        "tokenizer": "nori_tokenizer",
-        "filter": ["nori_readingform", "lowercase"]
+        "tokenizer": "nori_mixed_tokenizer",
+        "filter": [
+          "nori_reading_filter",
+          "lowercase",
+          "nori_pos_filter"
+        ]
       }
     }
   }
