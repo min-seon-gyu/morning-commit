@@ -221,6 +221,9 @@ Each subscriber receives one random post per day without duplicates until all po
 - Dead Letter Queues:
   - `email-queue-dlq` (Routing Key: `send-email`) - Failed email messages
   - `tracking-queue-dlq` (Routing Key: `tracking-log`) - Failed tracking messages
+- Consumer Dynamic Scaling:
+  - EmailConsumer: `concurrency = "3-10"` — scales 3 to 10 threads based on SMTP I/O load
+  - TrackingConsumer: `concurrency = "2-5"` — scales 2 to 5 threads based on DB insert load
 - Message Loss Prevention:
   - Publisher Confirm (`correlated`) + Returns: Broker delivery acknowledgement with NACK/return logging
   - Publisher Retry: `RetryTemplate` on `RabbitTemplate` (3 attempts, exponential backoff 1s → 2s → 4s)
@@ -235,10 +238,11 @@ Each subscriber receives one random post per day without duplicates until all po
 ### Web UI
 - `GET /` - Post listing with pagination (9 items/page), blog filtering, subscription signup, and hero section ("AI가 요약한 기술 블로그")
 - `GET /analytics` - Analytics dashboard with click statistics, subscriber count, and trends
-- `GET /search?keyword=&blog=` - Full-text search with optional blog filter
+- `GET /search?keyword=&blog=` - Full-text search with optional blog filter (keyword optional, defaults to all posts)
 - `GET /unsubscribe?email=&token=` - Unsubscribe confirmation page (HMAC token validated)
 - Uses Thymeleaf + Tailwind CSS
 - Post cards display reading time and difficulty badges
+- Search bar is positioned below the blog filter tag list (toggle on index page, always visible on search page)
 
 ### Email Verification & Subscription
 - `POST /api/subscribers/send-verification` - Sends 6-digit verification code via email (Redis, 5-min TTL)
@@ -249,6 +253,8 @@ Each subscriber receives one random post per day without duplicates until all po
 - `PostDocument` maps Post entity to Elasticsearch index with nori Korean analyzer
 - Custom analyzer config in `src/main/resources/elasticsearch-settings.json` (nori_tokenizer, nori_readingform, lowercase)
 - Multi-field search: title (boosted x3), summary, tags (boosted x2)
+- `Fuzziness.AUTO` on multi_match queries for typo tolerance
+- `keyword` parameter is optional (defaults to empty string) — `/search` without keyword shows all posts
 - 4 search modes: all posts, keyword only, blog filter only, keyword + blog filter
 - `findAllDocuments(pageable)` for browsing without keyword
 - `findAllByBlog(blog, pageable)` for blog-specific listing

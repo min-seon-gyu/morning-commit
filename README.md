@@ -242,7 +242,9 @@ OpenAI GPT가 각 아티클을 분석하여 다음을 추출합니다:
 
 - Nori 한국어 형태소 분석기 기반 (`nori_tokenizer`, `nori_readingform`, `lowercase`)
 - 다중 필드 검색: `title`(x3 부스트), `summary`, `tags`(x2 부스트)
+- `Fuzziness.AUTO`로 오타 자동 허용 (검색어 길이에 따라 1~2글자 오차 허용)
 - 4가지 검색 모드: 전체 조회 / 키워드 검색 / 블로그 필터 / 키워드 + 블로그 필터
+- 키워드 없이 `/search` 접근 시 전체 글 목록 표시
 - 결과 페이지네이션 (9개/페이지)
 
 ### Shuffle-and-Deplete 알고리즘
@@ -274,6 +276,11 @@ OpenAI GPT가 각 아티클을 분석하여 다음을 추출합니다:
 | DLX | `email-dlx` (Direct) | Dead Letter Exchange |
 | DLQ | `email-queue-dlq` (Routing Key: `send-email`) | 이메일 발송 실패 메시지 보관 |
 | DLQ | `tracking-queue-dlq` (Routing Key: `tracking-log`) | 클릭 트래킹 실패 메시지 보관 |
+
+**Consumer 동적 확장:**
+
+- **EmailConsumer**: `concurrency = "3-10"` — SMTP I/O 대기 시간에 따라 3~10개 인스턴스 자동 확장
+- **TrackingConsumer**: `concurrency = "2-5"` — DB insert 부하에 따라 2~5개 인스턴스 자동 확장
 
 **메시지 유실 방지:**
 
