@@ -56,17 +56,10 @@
                         <p class="text-sm text-slate-500">매일 아침, 기술 아티클</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <button onclick="toggleSearchBar()" class="flex items-center justify-center w-9 h-9 bg-slate-50 border border-slate-200 rounded-full hover:bg-slate-100 transition-colors">
-                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                        </svg>
-                    </button>
-                    <button onclick="openSubscribeModal()"
-                            class="px-3 py-1.5 sm:px-5 sm:py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs sm:text-sm font-semibold rounded-full shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 transition-all duration-300 hover:-translate-y-0.5">
-                        구독하기
-                    </button>
-                </div>
+                <button onclick="openSubscribeModal()"
+                        class="px-3 py-1.5 sm:px-5 sm:py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs sm:text-sm font-semibold rounded-full shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 transition-all duration-300 hover:-translate-y-0.5">
+                    구독
+                </button>
             </div>
         </div>
     </header>
@@ -115,8 +108,17 @@
                     Blog Name
                 </a>
             </div>
+            <!-- Search Toggle Button -->
+            <div class="mt-3">
+                <button onclick="toggleSearchBar()" class="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-full text-sm text-slate-500 hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-200 transition-all duration-200 shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    검색
+                </button>
+            </div>
             <!-- Search Bar (toggle) -->
-            <form id="searchForm" action="/search" method="get" class="hidden mt-4">
+            <form id="searchForm" action="/search" method="get" class="hidden mt-3">
                 <div class="relative w-full max-w-xl">
                     <input type="text" name="keyword" placeholder="검색어를 입력하세요"
                            class="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 shadow-sm">
