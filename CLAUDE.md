@@ -197,11 +197,16 @@ KAKAO_TECH, KAKAO_PAY, TOSS_TECH, WOOWA_BROS, LINE_ENGINEERING, HYPERCONNECT_TEC
 - **blogCrawlingJob**: Crawls RSS, scrapes content, summarizes (filters promotional), batch saves to DB, indexes to Elasticsearch
 - **emailDeliveryJob**: Reads subscribers, selects random post (shuffle-and-deplete), publishes to RabbitMQ
 
-### Promotional Content Filtering
-During blog crawling, OpenAI analyzes each article and flags promotional content. Posts marked as promotional are filtered out before saving. Promotional content includes:
-- Recruitment posts, events/hackathons, product recommendations
-- Company culture posts, research showcases without implementation, marketing
-- Only technical content (teaching technology, architecture, algorithms, practices) is kept
+### Promotional Content Filtering (Strict Mode)
+During blog crawling, OpenAI analyzes each article and flags promotional content. Posts marked as promotional are filtered out before saving. **When in doubt, filter out.** Promotional content includes:
+- Recruitment/hiring posts, intern recruitment, career fair announcements
+- Hackathon/ideathon/makeathon announcements or recaps, conference/meetup/seminar recaps
+- Welcome kit unboxings, office tours, onboarding process descriptions
+- Employee interviews, team introductions, company culture, year-in-review posts
+- Product launches, feature updates, release notes, service introductions
+- Project retrospectives focused on teamwork (not tech), research showcases without implementation
+- Newsletter roundups, link collections, surveys, open source announcements without technical depth
+- Only articles with substantial technical depth (code, architecture, implementation details) are kept
 
 ### Shuffle-and-Deplete Algorithm
 Each subscriber receives one random post per day without duplicates until all posts are sent:
