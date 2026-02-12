@@ -11,5 +11,7 @@ enum class Blog(val displayName: String) {
     SOCAR("SOCAR"),
     OLIVE_YOUNG("Olive Young Tech"),
     BANKSALAD("뱅크샐러드"),
-    DEV_SISTERS("데브시스터즈")
+    DEV_SISTERS("데브시스터즈"),
+    MUSINSA("무신사"),
+    DAANGN("당근")
 }

@@ -1,7 +1,6 @@
 package server.morningcommit.batch
 
 import com.rometools.rome.io.SyndFeedInput
-import com.rometools.rome.io.XmlReader
 import org.slf4j.LoggerFactory
 import org.springframework.batch.core.Job
 import org.springframework.batch.core.Step
@@ -25,7 +24,13 @@ import server.morningcommit.repository.PostRepository
 import server.morningcommit.scraper.HtmlScraper
 import server.morningcommit.service.BlogSourceService
 import server.morningcommit.service.PostSearchService
+import org.jsoup.Jsoup
+import java.io.StringReader
 import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
+import java.time.Duration
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.Date
@@ -78,17 +83,16 @@ class BlogCrawlingJobConfig(
 
     @Bean
     fun blogSourceProcessor(): ItemProcessor<BlogSource, List<Post>> {
-        val base = LocalDateTime.now().minusDays(2)
+        val base = LocalDateTime.now().minusYears(1)
 
         return ItemProcessor<BlogSource, List<Post>> { blogSource ->
             log.info("Processing blog: ${blogSource.blog.displayName}")
 
             try {
                 val existingLinks = postRepository.findLinksByBlog(blogSource.blog)
-                val feedUrl = URI(blogSource.rssUrl).toURL()
-                val feed = XmlReader(feedUrl).use { reader ->
-                    SyndFeedInput().build(reader)
-                }
+                val rawXml = fetchRssFeed(blogSource.rssUrl)
+                val sanitizedXml = sanitizeXml(rawXml)
+                val feed = SyndFeedInput().build(StringReader(sanitizedXml))
 
                 feed.entries
                     .filter { entry ->
@@ -106,8 +110,12 @@ class BlogCrawlingJobConfig(
                             val fullContent = try {
                                 htmlScraper.scrapeContent(link)
                             } catch (e: Exception) {
-                                log.warn("Failed to scrape content from $link: ${e.message}")
-                                entry.description?.value ?: ""
+                                val rssContent = entry.contents.firstOrNull()?.value
+                                if (!rssContent.isNullOrBlank()) {
+                                    Jsoup.parse(rssContent).text()
+                                } else {
+                                    entry.description?.value ?: ""
+                                }
                             }
 
                             val analysisResult = summaryService.analyze(fullContent)
@@ -141,10 +149,6 @@ class BlogCrawlingJobConfig(
         }
     }
 
-    private fun toLocalDateTime(date: Date?): LocalDateTime? {
-        return date?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalDateTime()
-    }
-
     @Bean
     fun postListWriter(): ItemWriter<List<Post>> {
         return ItemWriter { chunk: Chunk<out List<Post>> ->
@@ -168,5 +172,30 @@ class BlogCrawlingJobConfig(
                 log.info("Saved ${newPosts.size} posts (${allPosts.size - newPosts.size} duplicates skipped)")
             }
         }
+    }
+
+    private val rssHttpClient: HttpClient = HttpClient.newBuilder()
+        .followRedirects(HttpClient.Redirect.NORMAL)
+        .connectTimeout(Duration.ofSeconds(10))
+        .build()
+
+    private fun fetchRssFeed(rssUrl: String): String {
+        val request = HttpRequest.newBuilder()
+            .uri(URI.create(rssUrl))
+            .timeout(Duration.ofSeconds(10))
+            .GET()
+            .build()
+
+        return rssHttpClient.send(request, HttpResponse.BodyHandlers.ofString()).body()
+    }
+
+    private fun sanitizeXml(xml: String): String {
+        return xml
+            .replace(Regex("<!DOCTYPE[^>]*>", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\uFFFE\\uFFFF]"), "")
+    }
+
+    private fun toLocalDateTime(date: Date?): LocalDateTime? {
+        return date?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalDateTime()
     }
 }

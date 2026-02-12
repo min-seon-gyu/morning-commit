@@ -5,6 +5,8 @@ import org.springframework.batch.core.Job
 import org.springframework.batch.core.JobParametersBuilder
 import org.springframework.batch.core.launch.JobLauncher
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.boot.context.event.ApplicationReadyEvent
+import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
@@ -15,6 +17,12 @@ class JobScheduler(
     @Qualifier("emailDeliveryJob") private val emailDeliveryJob: Job
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
+
+    @EventListener(ApplicationReadyEvent::class)
+    fun initJob() {
+        log.info("애플리케이션 시작: 초기 크롤링 작업을 실행합니다.")
+        runCrawlingJob()
+    }
 
     @Scheduled(cron = "0 0 1 * * *")
     fun runCrawlingJob() {
