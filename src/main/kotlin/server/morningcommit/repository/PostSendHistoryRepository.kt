@@ -13,4 +13,8 @@ interface PostSendHistoryRepository : JpaRepository<PostSendHistory, Long> {
     @Modifying
     @Query("DELETE FROM PostSendHistory h WHERE h.subscriber.id = :subscriberId")
     fun deleteAllBySubscriberId(subscriberId: Long)
+
+    @Modifying
+    @Query("DELETE FROM PostSendHistory h WHERE h.postId IN :postIds")
+    fun deleteAllByPostIdIn(postIds: Collection<Long>)
 }
