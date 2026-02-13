@@ -73,12 +73,15 @@ spring:
     job:
       enabled: false
 
-# ==========================================
-# 6. 커스텀 설정 (OpenAI)
-# ==========================================
-openai:
-  url: https://api.openai.com/v1
-  api-key: ${OPENAI_API_KEY}
+  # ==========================================
+  # 6. Spring AI (OpenAI) 설정
+  # ==========================================
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        options:
+          model: gpt-4o-mini
 
 app:
   base-url: ${APP_BASE_URL}

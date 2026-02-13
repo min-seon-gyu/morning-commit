@@ -21,7 +21,7 @@ repositories {
     mavenCentral()
 }
 
-extra["springCloudVersion"] = "2024.0.0"
+extra["springAiVersion"] = "1.0.0"
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -42,8 +42,8 @@ dependencies {
     // Search (Elasticsearch)
     implementation("org.springframework.boot:spring-boot-starter-data-elasticsearch")
 
-    // External API (AI 요약 연동)
-    implementation("org.springframework.cloud:spring-cloud-starter-openfeign")
+    // AI (Spring AI - OpenAI 연동)
+    implementation("org.springframework.ai:spring-ai-starter-model-openai")
 
     // Messaging & Email (발송기)
     implementation("org.springframework.boot:spring-boot-starter-amqp") // RabbitMQ
@@ -62,7 +62,7 @@ dependencies {
 
 dependencyManagement {
     imports {
-        mavenBom("org.springframework.cloud:spring-cloud-dependencies:${property("springCloudVersion")}")
+        mavenBom("org.springframework.ai:spring-ai-bom:${property("springAiVersion")}")
     }
 }
 
