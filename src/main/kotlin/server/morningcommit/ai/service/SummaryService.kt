@@ -1,6 +1,5 @@
 package server.morningcommit.ai.service
 
-import org.slf4j.LoggerFactory
 import org.springframework.ai.chat.client.ChatClient.Builder
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.Resource
@@ -13,7 +12,6 @@ class SummaryService(
     private val promptResource: Resource,
     chatClientBuilder: Builder
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
     private val chatClient = chatClientBuilder
         .defaultSystem(promptResource)
         .build()
