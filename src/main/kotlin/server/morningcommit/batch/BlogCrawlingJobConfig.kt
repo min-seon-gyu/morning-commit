@@ -120,6 +120,11 @@ class BlogCrawlingJobConfig(
 
                             val analysisResult = summaryService.analyze(fullContent)
 
+                            if (analysisResult == null) {
+                                log.warn("AI 분석 실패로 포스트 건너뜀: ${entry.title}")
+                                return@mapNotNull null
+                            }
+
                             if (analysisResult.isPromotional) {
                                 return@mapNotNull null
                             }
