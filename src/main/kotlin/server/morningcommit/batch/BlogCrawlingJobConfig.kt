@@ -19,6 +19,7 @@ import org.springframework.transaction.PlatformTransactionManager
 import server.morningcommit.ai.service.SummaryService
 import server.morningcommit.config.RedisConfig
 import server.morningcommit.domain.BlogSource
+import server.morningcommit.domain.Difficulty
 import server.morningcommit.domain.Post
 import server.morningcommit.repository.PostRepository
 import server.morningcommit.scraper.HtmlScraper
@@ -131,11 +132,16 @@ class BlogCrawlingJobConfig(
                             }
 
                             val readingTimeMin = ceil(fullContent.length / 500.0).toInt().coerceAtLeast(1)
+                            val difficulty = try {
+                                Difficulty.valueOf(analysisResult.difficulty)
+                            } catch (e: IllegalArgumentException) {
+                                Difficulty.INTERMEDIATE
+                            }
 
                             Post(
                                 title = entry.title ?: "Untitled", link = link, summary = analysisResult.summary,
                                 keyInsight = analysisResult.keyInsight, tags = analysisResult.tags,
-                                difficulty = analysisResult.difficulty, readingTimeMin = readingTimeMin,
+                                difficulty = difficulty, readingTimeMin = readingTimeMin,
                                 publishDate = toLocalDateTime(entry.publishedDate ?: entry.updatedDate),
                                 blog = blogSource.blog
                             )

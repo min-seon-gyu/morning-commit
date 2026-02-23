@@ -43,8 +43,9 @@ class Post(
     @Convert(converter = StringListConverter::class)
     var tags: List<String> = emptyList(),
 
+    @Enumerated(EnumType.STRING)
     @Column(length = 20)
-    var difficulty: String = "INTERMEDIATE",
+    var difficulty: Difficulty = Difficulty.INTERMEDIATE,
 
     var readingTimeMin: Int = 0,
 

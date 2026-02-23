@@ -52,7 +52,7 @@ data class PostDocument(
                 link = post.link,
                 summary = post.summary,
                 tags = post.tags,
-                difficulty = post.difficulty,
+                difficulty = post.difficulty.name,
                 readingTimeMin = post.readingTimeMin,
                 publishDate = post.publishDate,
                 blog = post.blog.name,

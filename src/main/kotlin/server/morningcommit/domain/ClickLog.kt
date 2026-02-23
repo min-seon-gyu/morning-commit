@@ -26,9 +26,9 @@ class ClickLog(
     val targetUrl: String,
 
     @Column(nullable = false)
-    val clickedAt: LocalDateTime = LocalDateTime.now(),
+    val clickedAt: LocalDateTime,
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long? = null
-)
+) : BaseEntity()
