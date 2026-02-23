@@ -50,6 +50,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-mail") // 이메일 발송
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf") // 이메일 템플릿
 
+    // Coroutines (포스트별 병렬 처리)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+
     // Crawling & Parsing (수집기)
     implementation("com.rometools:rome:1.18.0") // RSS/Atom 파싱 표준 라이브러리
     implementation("org.jsoup:jsoup:1.17.2") // HTML 파싱 (본문 스크래핑용)

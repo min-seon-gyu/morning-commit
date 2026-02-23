@@ -26,6 +26,12 @@ import server.morningcommit.scraper.HtmlScraper
 import server.morningcommit.service.BlogSourceService
 import server.morningcommit.service.PostSearchService
 import org.jsoup.Jsoup
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import java.io.StringReader
 import java.net.URI
 import java.net.http.HttpClient
@@ -96,64 +102,70 @@ class BlogCrawlingJobConfig(
                 val sanitizedXml = sanitizeXml(rawXml)
                 val feed = SyndFeedInput().build(StringReader(sanitizedXml))
 
-                feed.entries
-                    .filter { entry ->
-                        val publishDate = toLocalDateTime(entry.publishedDate ?: entry.updatedDate)
-                        publishDate != null && publishDate.isAfter(base)
-                    }
-                    .mapNotNull { entry ->
-                        try {
-                            val link = entry.link ?: return@mapNotNull null
+                val filteredEntries = feed.entries.filter { entry ->
+                    val publishDate = toLocalDateTime(entry.publishedDate ?: entry.updatedDate)
+                    publishDate != null && publishDate.isAfter(base)
+                }
 
-                            if (link in existingLinks) {
-                                return@mapNotNull null
-                            }
+                val semaphore = Semaphore(5)
 
-                            val fullContent = try {
-                                htmlScraper.scrapeContent(link)
-                            } catch (e: Exception) {
-                                val rssContent = entry.contents.firstOrNull()?.value
-                                if (!rssContent.isNullOrBlank()) {
-                                    Jsoup.parse(rssContent).text()
-                                } else {
-                                    entry.description?.value ?: ""
+                runBlocking(Dispatchers.IO) {
+                    filteredEntries.map { entry ->
+                        async {
+                            semaphore.withPermit {
+                                try {
+                                    val link = entry.link ?: return@withPermit null
+
+                                    if (link in existingLinks) {
+                                        return@withPermit null
+                                    }
+
+                                    val fullContent = try {
+                                        htmlScraper.scrapeContent(link)
+                                    } catch (e: Exception) {
+                                        val rssContent = entry.contents.firstOrNull()?.value
+                                        if (!rssContent.isNullOrBlank()) {
+                                            Jsoup.parse(rssContent).text()
+                                        } else {
+                                            entry.description?.value ?: ""
+                                        }
+                                    }
+
+                                    val analysisResult = summaryService.analyze(fullContent)
+
+                                    if (analysisResult == null) {
+                                        log.warn("AI 분석 실패로 포스트 건너뜀: ${entry.title}")
+                                        return@withPermit null
+                                    }
+
+                                    if (analysisResult.isPromotional) {
+                                        return@withPermit null
+                                    }
+
+                                    val readingTimeMin = ceil(fullContent.length / 500.0).toInt().coerceAtLeast(1)
+                                    val difficulty = try {
+                                        Difficulty.valueOf(analysisResult.difficulty)
+                                    } catch (e: IllegalArgumentException) {
+                                        Difficulty.INTERMEDIATE
+                                    }
+
+                                    Post(
+                                        title = entry.title ?: "Untitled", link = link, summary = analysisResult.summary,
+                                        keyInsight = analysisResult.keyInsight, tags = analysisResult.tags,
+                                        difficulty = difficulty, readingTimeMin = readingTimeMin,
+                                        publishDate = toLocalDateTime(entry.publishedDate ?: entry.updatedDate),
+                                        blog = blogSource.blog
+                                    )
+                                } catch (e: Exception) {
+                                    log.error("Failed to process entry: ${entry.title}", e)
+                                    null
                                 }
                             }
-
-                            val analysisResult = summaryService.analyze(fullContent)
-
-                            if (analysisResult == null) {
-                                log.warn("AI 분석 실패로 포스트 건너뜀: ${entry.title}")
-                                return@mapNotNull null
-                            }
-
-                            if (analysisResult.isPromotional) {
-                                return@mapNotNull null
-                            }
-
-                            val readingTimeMin = ceil(fullContent.length / 500.0).toInt().coerceAtLeast(1)
-                            val difficulty = try {
-                                Difficulty.valueOf(analysisResult.difficulty)
-                            } catch (e: IllegalArgumentException) {
-                                Difficulty.INTERMEDIATE
-                            }
-
-                            Post(
-                                title = entry.title ?: "Untitled", link = link, summary = analysisResult.summary,
-                                keyInsight = analysisResult.keyInsight, tags = analysisResult.tags,
-                                difficulty = difficulty, readingTimeMin = readingTimeMin,
-                                publishDate = toLocalDateTime(entry.publishedDate ?: entry.updatedDate),
-                                blog = blogSource.blog
-                            )
-                        } catch (e: Exception) {
-                            log.error("Failed to process entry: ${entry.title}", e)
-
-                            null
                         }
-                    }
-                    .also { posts ->
-                        log.info("Processed ${posts.size} new posts from ${blogSource.blog.displayName}")
-                    }
+                    }.awaitAll().filterNotNull()
+                }.also { posts ->
+                    log.info("Processed ${posts.size} new posts from ${blogSource.blog.displayName}")
+                }
             } catch (e: Exception) {
                 log.error("Failed to process blog source: ${blogSource.blog.displayName}", e)
                 emptyList()
