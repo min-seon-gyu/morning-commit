@@ -26,6 +26,7 @@ import server.morningcommit.scraper.HtmlScraper
 import server.morningcommit.service.BlogSourceService
 import server.morningcommit.service.PostSearchService
 import org.jsoup.Jsoup
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -112,8 +113,8 @@ class BlogCrawlingJobConfig(
                 runBlocking(Dispatchers.IO) {
                     filteredEntries.map { entry ->
                         async {
-                            semaphore.withPermit {
-                                try {
+                            try {
+                                semaphore.withPermit {
                                     val link = entry.link ?: return@withPermit null
 
                                     if (link in existingLinks) {
@@ -156,10 +157,12 @@ class BlogCrawlingJobConfig(
                                         publishDate = toLocalDateTime(entry.publishedDate ?: entry.updatedDate),
                                         blog = blogSource.blog
                                     )
-                                } catch (e: Exception) {
-                                    log.error("Failed to process entry: ${entry.title}", e)
-                                    null
                                 }
+                            } catch (e: CancellationException) {
+                                throw e
+                            } catch (e: Exception) {
+                                log.error("Failed to process entry: ${entry.title}", e)
+                                null
                             }
                         }
                     }.awaitAll().filterNotNull()
