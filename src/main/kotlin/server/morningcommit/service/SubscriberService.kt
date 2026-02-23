@@ -21,6 +21,8 @@ class SubscriberService(
 
     companion object {
         private const val KEY_PREFIX = "verification:"
+        private const val ATTEMPT_PREFIX = "verification:attempts:"
+        private const val MAX_ATTEMPTS = 5
         private val TTL = Duration.ofMinutes(5)
     }
 
@@ -50,11 +52,22 @@ class SubscriberService(
         val savedCode = redisTemplate.opsForValue().get("$KEY_PREFIX$email")
             ?: return false
 
+        val attemptKey = "$ATTEMPT_PREFIX$email"
+        val attempts = redisTemplate.opsForValue().get(attemptKey)?.toIntOrNull() ?: 0
+
+        if (attempts >= MAX_ATTEMPTS) {
+            redisTemplate.delete("$KEY_PREFIX$email")
+            redisTemplate.delete(attemptKey)
+            return false
+        }
+
         if (savedCode != code) {
+            redisTemplate.opsForValue().set(attemptKey, (attempts + 1).toString(), TTL)
             return false
         }
 
         redisTemplate.delete("$KEY_PREFIX$email")
+        redisTemplate.delete(attemptKey)
 
         val subscriber = subscriberRepository.findByEmail(email)
 
