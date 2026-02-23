@@ -22,16 +22,19 @@ class RabbitMqConfig {
     private val log = LoggerFactory.getLogger(javaClass)
 
     companion object {
-        const val QUEUE_NAME = "email-queue"
-        const val EXCHANGE_NAME = "email-exchange"
-        const val ROUTING_KEY = "send-email"
+        const val EMAIL_EXCHANGE_NAME = "email-exchange"
+        const val EMAIL_QUEUE_NAME = "email-queue"
+        const val EMAIL_ROUTING_KEY = "send-email"
+        const val EMAIL_DLX_NAME = "email-queue-dlx"
+        const val EMAIL_DLQ_NAME = "email-queue-dlq"
+        const val EMAIL_DLQ_ROUTING_KEY = "email-dead-letter"
 
+        const val TRACKING_EXCHANGE_NAME = "tracking-exchange"
         const val TRACKING_QUEUE_NAME = "tracking-queue"
         const val TRACKING_ROUTING_KEY = "tracking-log"
-
-        const val DLX_EXCHANGE_NAME = "email-dlx"
-        const val EMAIL_DLQ_NAME = "email-queue-dlq"
+        const val TRACKING_DLX_NAME = "tracking-queue-dlx"
         const val TRACKING_DLQ_NAME = "tracking-queue-dlq"
+        const val TRACKING_DLQ_ROUTING_KEY = "tracking-dead-letter"
     }
 
     // ==========================================
@@ -40,7 +43,12 @@ class RabbitMqConfig {
 
     @Bean
     fun emailExchange(): DirectExchange {
-        return DirectExchange(EXCHANGE_NAME)
+        return DirectExchange(EMAIL_EXCHANGE_NAME)
+    }
+
+    @Bean
+    fun trackingExchange(): DirectExchange {
+        return DirectExchange(TRACKING_EXCHANGE_NAME)
     }
 
     // ==========================================
@@ -48,33 +56,38 @@ class RabbitMqConfig {
     // ==========================================
 
     @Bean
-    fun deadLetterExchange(): DirectExchange {
-        return DirectExchange(DLX_EXCHANGE_NAME)
+    fun emailDlx(): DirectExchange {
+        return DirectExchange(EMAIL_DLX_NAME)
     }
 
     @Bean
-    fun emailDeadLetterQueue(): Queue {
+    fun trackingDlx(): DirectExchange {
+        return DirectExchange(TRACKING_DLX_NAME)
+    }
+
+    @Bean
+    fun emailDlq(): Queue {
         return Queue(EMAIL_DLQ_NAME, true)
     }
 
     @Bean
-    fun trackingDeadLetterQueue(): Queue {
+    fun trackingDlq(): Queue {
         return Queue(TRACKING_DLQ_NAME, true)
     }
 
     @Bean
-    fun emailDlqBinding(emailDeadLetterQueue: Queue, deadLetterExchange: DirectExchange): Binding {
+    fun emailDlqBinding(emailDlq: Queue, emailDlx: DirectExchange): Binding {
         return BindingBuilder
-            .bind(emailDeadLetterQueue)
-            .to(deadLetterExchange)
-            .with(ROUTING_KEY)
+            .bind(emailDlq)
+            .to(emailDlx)
+            .with(EMAIL_ROUTING_KEY)
     }
 
     @Bean
-    fun trackingDlqBinding(trackingDeadLetterQueue: Queue, deadLetterExchange: DirectExchange): Binding {
+    fun trackingDlqBinding(trackingDlq: Queue, trackingDlx: DirectExchange): Binding {
         return BindingBuilder
-            .bind(trackingDeadLetterQueue)
-            .to(deadLetterExchange)
+            .bind(trackingDlq)
+            .to(trackingDlx)
             .with(TRACKING_ROUTING_KEY)
     }
 
@@ -84,8 +97,9 @@ class RabbitMqConfig {
 
     @Bean
     fun emailQueue(): Queue {
-        return QueueBuilder.durable(QUEUE_NAME)
-            .deadLetterExchange(DLX_EXCHANGE_NAME)
+        return QueueBuilder.durable(EMAIL_QUEUE_NAME)
+            .deadLetterExchange(EMAIL_DLX_NAME)
+            .deadLetterRoutingKey(EMAIL_DLQ_ROUTING_KEY)
             .build()
     }
 
@@ -94,21 +108,22 @@ class RabbitMqConfig {
         return BindingBuilder
             .bind(emailQueue)
             .to(emailExchange)
-            .with(ROUTING_KEY)
+            .with(EMAIL_ROUTING_KEY)
     }
 
     @Bean
     fun trackingQueue(): Queue {
         return QueueBuilder.durable(TRACKING_QUEUE_NAME)
-            .deadLetterExchange(DLX_EXCHANGE_NAME)
+            .deadLetterExchange(TRACKING_DLX_NAME)
+            .deadLetterRoutingKey(TRACKING_DLQ_ROUTING_KEY)
             .build()
     }
 
     @Bean
-    fun trackingBinding(trackingQueue: Queue, emailExchange: DirectExchange): Binding {
+    fun trackingBinding(trackingQueue: Queue, trackingExchange: DirectExchange): Binding {
         return BindingBuilder
             .bind(trackingQueue)
-            .to(emailExchange)
+            .to(trackingExchange)
             .with(TRACKING_ROUTING_KEY)
     }
 

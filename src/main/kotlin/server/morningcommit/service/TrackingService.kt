@@ -24,7 +24,7 @@ class TrackingService(
         }
 
         val event = ClickLogEvent(subscriberId = subscriberId, targetUrl = url, timestamp = LocalDateTime.now())
-        rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.TRACKING_ROUTING_KEY, event)
+        rabbitTemplate.convertAndSend(RabbitMqConfig.TRACKING_EXCHANGE_NAME, RabbitMqConfig.TRACKING_ROUTING_KEY, event)
 
         return TrackResult.Success(url)
     }
