@@ -193,7 +193,7 @@ class BlogCrawlingJobConfig(
                 log.error("Failed to index posts to Elasticsearch", e)
             }
 
-            log.info("Saved ${allPosts.size} posts (${allPosts.size} duplicates skipped)")
+            log.info("Saved ${allPosts.size} posts")
         }
     }
 
