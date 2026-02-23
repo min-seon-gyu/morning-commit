@@ -82,6 +82,7 @@ class BlogCrawlingJobConfig(
     }
 
     @Bean
+    @StepScope
     fun blogSourceProcessor(): ItemProcessor<BlogSource, List<Post>> {
         val base = LocalDateTime.now().minusDays(2)
 

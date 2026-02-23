@@ -48,6 +48,7 @@ class SubscriberService(
         return code
     }
 
+    @Transactional
     fun verifyAndSubscribe(email: String, code: String): Boolean {
         val savedCode = redisTemplate.opsForValue().get("$KEY_PREFIX$email")
             ?: return false
