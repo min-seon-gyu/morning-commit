@@ -151,7 +151,8 @@ class BlogCrawlingJobConfig(
                                     }
 
                                     Post(
-                                        title = entry.title ?: "Untitled", link = link, summary = analysisResult.summary,
+                                        title = entry.title ?: "Untitled", link = link,
+                                        summary = analysisResult.summary,
                                         keyInsight = analysisResult.keyInsight, tags = analysisResult.tags,
                                         difficulty = difficulty, readingTimeMin = readingTimeMin,
                                         publishDate = toLocalDateTime(entry.publishedDate ?: entry.updatedDate),
@@ -182,22 +183,17 @@ class BlogCrawlingJobConfig(
             val allPosts = chunk.items.flatten()
             if (allPosts.isEmpty()) return@ItemWriter
 
-            val existingLinks = postRepository.findExistingLinks(allPosts.map { it.link })
-            val newPosts = allPosts.filter { it.link !in existingLinks }
+            val savedPosts = postRepository.saveAll(allPosts)
 
-            if (newPosts.isNotEmpty()) {
-                val savedPosts = postRepository.saveAll(newPosts)
+            cacheManager.getCache(RedisConfig.POST_LISTING)?.clear()
 
-                cacheManager.getCache(RedisConfig.POST_LISTING)?.clear()
-
-                try {
-                    postSearchService.indexPosts(savedPosts.toList())
-                } catch (e: Exception) {
-                    log.error("Failed to index posts to Elasticsearch", e)
-                }
-
-                log.info("Saved ${newPosts.size} posts (${allPosts.size - newPosts.size} duplicates skipped)")
+            try {
+                postSearchService.indexPosts(savedPosts.toList())
+            } catch (e: Exception) {
+                log.error("Failed to index posts to Elasticsearch", e)
             }
+
+            log.info("Saved ${allPosts.size} posts (${allPosts.size} duplicates skipped)")
         }
     }
 
