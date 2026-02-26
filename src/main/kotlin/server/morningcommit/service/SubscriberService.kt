@@ -4,6 +4,8 @@ import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import server.morningcommit.domain.Subscriber
+import server.morningcommit.exception.NotFoundException
+import server.morningcommit.exception.VerificationFailedException
 import server.morningcommit.repository.SubscriberRepository
 import java.time.Duration
 import kotlin.random.Random
@@ -14,11 +16,6 @@ class SubscriberService(
     private val redisTemplate: StringRedisTemplate
 ) {
 
-    sealed interface UnsubscribeResult {
-        data object Success : UnsubscribeResult
-        data object NotFound : UnsubscribeResult
-    }
-
     companion object {
         private const val KEY_PREFIX = "verification:"
         private const val ATTEMPT_PREFIX = "verification:attempts:"
@@ -27,13 +24,11 @@ class SubscriberService(
     }
 
     @Transactional
-    fun unsubscribe(email: String): UnsubscribeResult {
+    fun unsubscribe(email: String) {
         val subscriber = subscriberRepository.findByEmail(email)
-            ?: return UnsubscribeResult.NotFound
+            ?: throw NotFoundException("구독자를 찾을 수 없습니다: $email")
 
         subscriber.isActive = false
-
-        return UnsubscribeResult.Success
     }
 
     fun isAlreadyActive(email: String): Boolean {
@@ -50,9 +45,9 @@ class SubscriberService(
     }
 
     @Transactional
-    fun verifyAndSubscribe(email: String, code: String): Boolean {
+    fun verifyAndSubscribe(email: String, code: String) {
         val savedCode = redisTemplate.opsForValue().get("$KEY_PREFIX$email")
-            ?: return false
+            ?: throw VerificationFailedException("인증 코드가 만료되었거나 존재하지 않습니다")
 
         val attemptKey = "$ATTEMPT_PREFIX$email"
         val attempts = redisTemplate.opsForValue().get(attemptKey)?.toIntOrNull() ?: 0
@@ -61,13 +56,13 @@ class SubscriberService(
             redisTemplate.delete("$KEY_PREFIX$email")
             redisTemplate.delete(attemptKey)
 
-            return false
+            throw VerificationFailedException("인증 시도 횟수를 초과했습니다")
         }
 
         if (savedCode != code) {
             redisTemplate.opsForValue().set(attemptKey, (attempts + 1).toString(), TTL)
 
-            return false
+            throw VerificationFailedException("인증 코드가 일치하지 않습니다")
         }
 
         redisTemplate.delete("$KEY_PREFIX$email")
@@ -76,7 +71,5 @@ class SubscriberService(
         val subscriber = subscriberRepository.findByEmail(email)
 
         subscriber?.apply { isActive = true } ?: subscriberRepository.save(Subscriber(email = email))
-
-        return true
     }
 }

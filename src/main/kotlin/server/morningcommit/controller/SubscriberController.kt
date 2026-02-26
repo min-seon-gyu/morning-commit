@@ -7,8 +7,9 @@ import server.morningcommit.controller.dto.SendVerificationRequest
 import server.morningcommit.controller.dto.UnsubscribeRequest
 import server.morningcommit.controller.dto.VerifyRequest
 import server.morningcommit.email.EmailService
+import server.morningcommit.exception.DuplicateException
+import server.morningcommit.exception.InvalidRequestException
 import server.morningcommit.service.SubscriberService
-import server.morningcommit.service.SubscriberService.UnsubscribeResult
 import server.morningcommit.service.UnsubscribeTokenService
 
 @RestController
@@ -22,7 +23,7 @@ class SubscriberController(
     @PostMapping("/send-verification")
     fun sendVerification(@RequestBody request: SendVerificationRequest): ResponseEntity<Void> {
         if (subscriberService.isAlreadyActive(request.email)) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build()
+            throw DuplicateException("이미 구독 중인 이메일입니다: ${request.email}")
         }
 
         val code = subscriberService.generateAndSave(request.email)
@@ -33,22 +34,19 @@ class SubscriberController(
 
     @PostMapping("/verify")
     fun verify(@RequestBody request: VerifyRequest): ResponseEntity<Void> {
-        return if (subscriberService.verifyAndSubscribe(request.email, request.code)) {
-            ResponseEntity.status(HttpStatus.CREATED).build()
-        } else {
-            ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
-        }
+        subscriberService.verifyAndSubscribe(request.email, request.code)
+
+        return ResponseEntity.status(HttpStatus.CREATED).build()
     }
 
     @PostMapping("/unsubscribe")
     fun unsubscribeWithToken(@RequestBody request: UnsubscribeRequest): ResponseEntity<Void> {
         if (!unsubscribeTokenService.validateToken(request.email, request.token)) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
+            throw InvalidRequestException("유효하지 않은 구독 해지 토큰입니다")
         }
 
-        return when (subscriberService.unsubscribe(request.email)) {
-            UnsubscribeResult.Success -> ResponseEntity.ok().build()
-            UnsubscribeResult.NotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND).build()
-        }
+        subscriberService.unsubscribe(request.email)
+
+        return ResponseEntity.ok().build()
     }
 }
