@@ -1,7 +1,7 @@
 package server.morningcommit.batch
 
 import com.rometools.rome.io.SyndFeedInput
-import org.slf4j.LoggerFactory
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.batch.core.Job
 import org.springframework.batch.core.Step
 import org.springframework.batch.core.configuration.annotation.StepScope
@@ -55,7 +55,7 @@ class BlogCrawlingJobConfig(
     private val cacheManager: CacheManager,
     private val postSearchService: PostSearchService
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
+    private val log = KotlinLogging.logger {}
 
     @Bean
     fun blogCrawlingJob(): Job {
@@ -95,7 +95,7 @@ class BlogCrawlingJobConfig(
         val base = LocalDateTime.now().minusDays(2)
 
         return ItemProcessor<BlogSource, List<Post>> { blogSource ->
-            log.info("Processing blog: ${blogSource.blog.displayName}")
+            log.info { "Processing blog: ${blogSource.blog.displayName}" }
 
             try {
                 val existingLinks = postRepository.findLinksByBlog(blogSource.blog)
@@ -135,7 +135,7 @@ class BlogCrawlingJobConfig(
                                     val analysisResult = summaryService.analyze(fullContent)
 
                                     if (analysisResult == null) {
-                                        log.warn("AI 분석 실패로 포스트 건너뜀: ${entry.title}")
+                                        log.warn { "AI 분석 실패로 포스트 건너뜀: ${entry.title}" }
                                         return@withPermit null
                                     }
 
@@ -162,16 +162,16 @@ class BlogCrawlingJobConfig(
                             } catch (e: CancellationException) {
                                 throw e
                             } catch (e: Exception) {
-                                log.error("Failed to process entry: ${entry.title}", e)
+                                log.error(e) { "Failed to process entry: ${entry.title}" }
                                 null
                             }
                         }
                     }.awaitAll().filterNotNull()
                 }.also { posts ->
-                    log.info("Processed ${posts.size} new posts from ${blogSource.blog.displayName}")
+                    log.info { "Processed ${posts.size} new posts from ${blogSource.blog.displayName}" }
                 }
             } catch (e: Exception) {
-                log.error("Failed to process blog source: ${blogSource.blog.displayName}", e)
+                log.error(e) { "Failed to process blog source: ${blogSource.blog.displayName}" }
                 emptyList()
             }
         }
@@ -190,10 +190,10 @@ class BlogCrawlingJobConfig(
             try {
                 postSearchService.indexPosts(savedPosts.toList())
             } catch (e: Exception) {
-                log.error("Failed to index posts to Elasticsearch", e)
+                log.error(e) { "Failed to index posts to Elasticsearch" }
             }
 
-            log.info("Saved ${allPosts.size} posts")
+            log.info { "Saved ${allPosts.size} posts" }
         }
     }
 

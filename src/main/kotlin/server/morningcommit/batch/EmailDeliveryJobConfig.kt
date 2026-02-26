@@ -1,7 +1,7 @@
 package server.morningcommit.batch
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.persistence.EntityManagerFactory
-import org.slf4j.LoggerFactory
 import org.springframework.batch.core.Job
 import org.springframework.batch.core.Step
 import org.springframework.batch.core.configuration.annotation.StepScope
@@ -31,7 +31,7 @@ class EmailDeliveryJobConfig(
     private val emailProducer: EmailProducer,
     private val postSendHistoryRepository: PostSendHistoryRepository
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
+    private val log = KotlinLogging.logger {}
 
     @Bean
     fun emailDeliveryJob(): Job {
@@ -95,9 +95,9 @@ class EmailDeliveryJobConfig(
                 try {
                     emailProducer.sendEmailEvent(emailRequest)
 
-                    log.info("Queued email for: ${emailRequest.email}")
+                    log.info { "Queued email for: ${emailRequest.email}" }
                 } catch (e: Exception) {
-                    log.error("Failed to queue email for ${emailRequest.email}: ${e.message}", e)
+                    log.error(e) { "Failed to queue email for ${emailRequest.email}: ${e.message}" }
                 }
             }
         }

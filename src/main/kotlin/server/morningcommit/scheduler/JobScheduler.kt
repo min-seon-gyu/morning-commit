@@ -1,6 +1,6 @@
 package server.morningcommit.scheduler
 
-import org.slf4j.LoggerFactory
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.batch.core.Job
 import org.springframework.batch.core.JobParametersBuilder
 import org.springframework.batch.core.launch.JobLauncher
@@ -14,7 +14,7 @@ class JobScheduler(
     @Qualifier("blogCrawlingJob") private val blogCrawlingJob: Job,
     @Qualifier("emailDeliveryJob") private val emailDeliveryJob: Job
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
+    private val log = KotlinLogging.logger {}
 
     @Scheduled(cron = "0 0 1 * * *")
     fun runCrawlingJob() {
@@ -26,14 +26,14 @@ class JobScheduler(
             val crawlingExecution = jobLauncher.run(blogCrawlingJob, crawlingParams)
 
             if (crawlingExecution.status.isUnsuccessful) {
-                log.error("blogCrawlingJob failed.")
+                log.error { "blogCrawlingJob failed." }
 
                 return
             }
 
-            log.info("=== Blog Crawling Job Completed ===")
+            log.info { "=== Blog Crawling Job Completed ===" }
         } catch (e: Exception) {
-            log.error("Blog crawling job failed: ${e.message}", e)
+            log.error(e) { "Blog crawling job failed: ${e.message}" }
         }
     }
 
@@ -47,14 +47,14 @@ class JobScheduler(
             val deliveryExecution = jobLauncher.run(emailDeliveryJob, deliveryParams)
 
             if (deliveryExecution.status.isUnsuccessful) {
-                log.error("emailDeliveryJob failed.")
+                log.error { "emailDeliveryJob failed." }
 
                 return
             }
 
-            log.info("=== Email Delivery Job Completed ===")
+            log.info { "=== Email Delivery Job Completed ===" }
         } catch (e: Exception) {
-            log.error("Email delivery job failed: ${e.message}", e)
+            log.error(e) { "Email delivery job failed: ${e.message}" }
         }
     }
 }

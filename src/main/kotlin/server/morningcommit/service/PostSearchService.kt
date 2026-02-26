@@ -1,6 +1,5 @@
 package server.morningcommit.service
 
-import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -13,7 +12,6 @@ import server.morningcommit.repository.PostSearchRepository
 class PostSearchService(
     private val postSearchRepository: PostSearchRepository
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
 
     fun search(keyword: String, blog: Blog?, pageable: Pageable): Page<PostDocument> {
         val isBlank = keyword.isBlank()

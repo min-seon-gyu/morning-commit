@@ -1,6 +1,6 @@
 package server.morningcommit.ai.service
 
-import org.slf4j.LoggerFactory
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.ai.chat.client.ChatClient.Builder
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.Resource
@@ -13,7 +13,7 @@ class SummaryService(
     private val promptResource: Resource,
     chatClientBuilder: Builder
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
+    private val log = KotlinLogging.logger {}
     private val chatClient = chatClientBuilder
         .defaultSystem(promptResource)
         .build()
@@ -25,7 +25,7 @@ class SummaryService(
                 .call()
                 .entity(BlogAnalysisResult::class.java)
         } catch (e: Exception) {
-            log.warn("AI 분석 실패: ${e.message}", e)
+            log.warn(e) { "AI 분석 실패: ${e.message}" }
             null
         }
     }

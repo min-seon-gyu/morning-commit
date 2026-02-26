@@ -1,6 +1,6 @@
 package server.morningcommit.email
 
-import org.slf4j.LoggerFactory
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.amqp.rabbit.annotation.RabbitListener
 import org.springframework.cache.CacheManager
 import org.springframework.stereotype.Component
@@ -15,7 +15,7 @@ class TrackingConsumer(
     private val clickLogRepository: ClickLogRepository,
     private val cacheManager: CacheManager
 ) {
-    private val log = LoggerFactory.getLogger(javaClass)
+    private val log = KotlinLogging.logger {}
 
     @RabbitListener(queues = [RabbitMqConfig.TRACKING_QUEUE_NAME], concurrency = "2-5")
     fun handleClickLogEvent(event: ClickLogEvent) {
@@ -27,9 +27,9 @@ class TrackingConsumer(
             clickLogRepository.save(clickLog)
             cacheManager.getCache(RedisConfig.ANALYTICS_DASHBOARD)?.clear()
 
-            log.info("Successfully saved click log for subscriberId=${event.subscriberId}")
+            log.info { "Successfully saved click log for subscriberId=${event.subscriberId}" }
         } catch (e: Exception) {
-            log.error("Failed to save click log: ${e.message}", e)
+            log.error(e) { "Failed to save click log: ${e.message}" }
 
             throw e
         }

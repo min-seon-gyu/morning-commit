@@ -22,6 +22,7 @@ class PostService(
     )
     fun findAll(pageable: Pageable): RestPage<Post> {
         val page = postRepository.findAll(pageable)
+
         return RestPage(page.content, page.number, page.size, page.totalElements)
     }
 
@@ -31,6 +32,7 @@ class PostService(
     )
     fun findByBlog(blog: Blog, pageable: Pageable): RestPage<Post> {
         val page = postRepository.findByBlog(blog, pageable)
+
         return RestPage(page.content, page.number, page.size, page.totalElements)
     }
 

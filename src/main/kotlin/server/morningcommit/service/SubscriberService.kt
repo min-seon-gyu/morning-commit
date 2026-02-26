@@ -32,6 +32,7 @@ class SubscriberService(
             ?: return UnsubscribeResult.NotFound
 
         subscriber.isActive = false
+
         return UnsubscribeResult.Success
     }
 
@@ -59,11 +60,13 @@ class SubscriberService(
         if (attempts >= MAX_ATTEMPTS) {
             redisTemplate.delete("$KEY_PREFIX$email")
             redisTemplate.delete(attemptKey)
+
             return false
         }
 
         if (savedCode != code) {
             redisTemplate.opsForValue().set(attemptKey, (attempts + 1).toString(), TTL)
+
             return false
         }
 

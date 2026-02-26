@@ -1,6 +1,6 @@
 package server.morningcommit.config
 
-import org.slf4j.LoggerFactory
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.amqp.core.Binding
 import org.springframework.amqp.core.BindingBuilder
 import org.springframework.amqp.core.DirectExchange
@@ -19,7 +19,7 @@ import org.springframework.retry.support.RetryTemplate
 @Configuration
 class RabbitMqConfig {
 
-    private val log = LoggerFactory.getLogger(javaClass)
+    private val log = KotlinLogging.logger {}
 
     companion object {
         const val EMAIL_EXCHANGE_NAME = "email-exchange"
@@ -162,18 +162,12 @@ class RabbitMqConfig {
 
             setConfirmCallback { correlationData, ack, cause ->
                 if (!ack) {
-                    log.warn("Message not confirmed by broker. cause={}, correlationData={}", cause, correlationData)
+                    log.warn { "Message not confirmed by broker. cause=$cause, correlationData=$correlationData" }
                 }
             }
 
             setReturnsCallback { returned ->
-                log.warn(
-                    "Message returned from broker. exchange={}, routingKey={}, replyCode={}, replyText={}",
-                    returned.exchange,
-                    returned.routingKey,
-                    returned.replyCode,
-                    returned.replyText
-                )
+                log.warn { "Message returned from broker. exchange=${returned.exchange}, routingKey=${returned.routingKey}, replyCode=${returned.replyCode}, replyText=${returned.replyText}" }
             }
         }
     }
