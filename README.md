@@ -25,7 +25,7 @@ MorningCommit은 국내 주요 기술 블로그를 자동으로 크롤링하고,
 
 | 기능 | 설명 |
 |------|------|
-| RSS 크롤링 | 11개 기술 블로그의 RSS 피드를 매일 자동 수집 |
+| RSS 크롤링 | 13개 기술 블로그의 RSS 피드를 매일 자동 수집 |
 | AI 요약 | OpenAI GPT로 아티클 요약, 난이도 분석, 핵심 인사이트 추출 |
 | 홍보성 필터링 | AI가 홍보성 콘텐츠를 자동 분류하여 기술 아티클만 선별 |
 | 한국어 전문 검색 | Elasticsearch + Nori 형태소 분석기 기반 전문 검색 |
@@ -51,6 +51,8 @@ MorningCommit은 국내 주요 기술 블로그를 자동으로 크롤링하고,
 | 올리브영 | `OLIVE_YOUNG` |
 | 뱅크샐러드 | `BANKSALAD` |
 | 데브시스터즈 | `DEV_SISTERS` |
+| 무신사 | `MUSINSA` |
+| 당근 | `DAANGN` |
 
 ---
 
@@ -67,7 +69,9 @@ MorningCommit은 국내 주요 기술 블로그를 자동으로 크롤링하고,
 | Message Queue | RabbitMQ |
 | Cache | Redis |
 | Template | Thymeleaf + Tailwind CSS |
-| External API | OpenFeign (OpenAI API) |
+| AI | Spring AI 1.0.0 (OpenAI GPT) |
+| Concurrency | Kotlin Coroutines 1.8.1 |
+| Logging | KotlinLogging |
 | Parser | Rome (RSS/Atom), Jsoup (HTML) |
 | Lint | ktlint |
 | Infra | Docker Compose |
@@ -85,7 +89,8 @@ blogCrawlingJob
     ├─► RSS 피드 수집 (Rome)
     ├─► 최근 게시글 필터링 (최근 2일)
     ├─► 본문 스크래핑 (Jsoup)
-    ├─► AI 요약 및 분석 (OpenAI via Feign)
+    ├─► AI 요약 및 분석 (OpenAI via Spring AI ChatClient)
+    │       ├─► Kotlin Coroutines 병렬 처리 (Semaphore(5))
     │       ├─► 홍보성 콘텐츠 필터링
     │       └─► 요약, 태그, 난이도, 핵심 인사이트, 읽기 시간 추출
     ├─► Post 엔티티 일괄 저장 (중복 사전 필터링)
@@ -137,7 +142,7 @@ emailDeliveryJob
     ├─► POST /api/subscribers/send-verification
     │       └─► 6자리 인증 코드 생성 → Redis 저장 (5분 TTL) → 이메일 발송
     └─► POST /api/subscribers/verify
-            └─► Redis에서 코드 검증 → 구독자 등록 (또는 기존 구독자 재활성화)
+            └─► Redis에서 코드 검증 (최대 5회 시도 제한) → 구독자 등록 (또는 기존 구독자 재활성화)
 
 구독 해지 흐름 (HMAC 토큰 기반)
     ├─► 뉴스레터 이메일의 구독 해지 링크 클릭
@@ -154,7 +159,7 @@ emailDeliveryJob
 
 ```
 server.morningcommit
-├── domain/           # JPA 엔티티, Blog enum, PostDocument (Elasticsearch)
+├── domain/           # JPA 엔티티, Blog enum, Difficulty enum, PostDocument (Elasticsearch)
 ├── repository/       # Spring Data JPA Repository, PostSearchRepository (Elasticsearch)
 ├── batch/            # Spring Batch Job (BlogCrawlingJob, EmailDeliveryJob)
 ├── scheduler/        # @Scheduled 작업 오케스트레이션 (JobScheduler)
@@ -165,11 +170,13 @@ server.morningcommit
 │   ├── TrackingController   # 클릭 트래킹 리다이렉트
 │   ├── SearchController     # Elasticsearch 검색 엔드포인트
 │   └── SubscriberController # 이메일 인증, 구독, 구독해지
+├── exception/
+│   ├── BusinessException    # 기본 예외 (NotFoundException, DuplicateException 등)
+│   ├── ErrorCode            # 에러 코드 Enum (S001~S003, C001~C002)
+│   └── GlobalExceptionHandler # @RestControllerAdvice 전역 예외 처리
 ├── ai/
-│   ├── client/       # OpenAiClient (Feign)
-│   ├── dto/          # ChatCompletion DTO
 │   └── service/
-│       ├── SummaryService        # OpenAI 요약 + 홍보성 분석
+│       ├── SummaryService        # Spring AI ChatClient 기반 요약 + 홍보성 분석
 │       └── dto/BlogAnalysisResult # 요약, 태그, 난이도, 핵심 인사이트, 홍보 여부
 ├── email/
 │   ├── dto/          # EmailRequest, ClickLogEvent, TrackedPost
@@ -189,7 +196,7 @@ server.morningcommit
 │   ├── BlogSourceService         # 블로그 소스 관리
 │   ├── UnsubscribeTokenService   # HMAC-SHA256 토큰 생성/검증
 │   └── dto/          # PostClickCount, BlogClickCount, DailyClickCount
-└── config/           # RabbitMqConfig, RedisConfig, JpaConfig, FeignConfig,
+└── config/           # RabbitMqConfig, RedisConfig, JpaConfig,
                       # ElasticsearchConfig, SchedulingConfig, StringListConverter, RestPage
 ```
 
@@ -212,7 +219,7 @@ server.morningcommit
 | 메서드 | 경로 | 설명 |
 |--------|------|------|
 | POST | `/api/subscribers/send-verification` | 6자리 인증 코드 이메일 발송 (Redis, 5분 TTL) |
-| POST | `/api/subscribers/verify` | 인증 코드 확인 후 구독자 등록/재활성화 |
+| POST | `/api/subscribers/verify` | 인증 코드 확인 후 구독자 등록/재활성화 (최대 5회 시도) |
 | POST | `/api/subscribers/unsubscribe` | HMAC 토큰 검증 후 구독 해지 |
 
 ---
@@ -270,12 +277,14 @@ OpenAI GPT가 각 아티클을 분석하여 다음을 추출합니다:
 
 | 항목 | 값 | 용도 |
 |------|-----|------|
-| Exchange | `email-exchange` (Direct) | 공통 Exchange |
+| Exchange | `email-exchange` (Direct) | 이메일 발송 Exchange |
+| Exchange | `tracking-exchange` (Direct) | 클릭 트래킹 Exchange |
 | Queue | `email-queue` (Routing Key: `send-email`) | 이메일 발송 |
 | Queue | `tracking-queue` (Routing Key: `tracking-log`) | 클릭 트래킹 |
-| DLX | `email-dlx` (Direct) | Dead Letter Exchange |
-| DLQ | `email-queue-dlq` (Routing Key: `send-email`) | 이메일 발송 실패 메시지 보관 |
-| DLQ | `tracking-queue-dlq` (Routing Key: `tracking-log`) | 클릭 트래킹 실패 메시지 보관 |
+| DLX | `email-queue-dlx` (Direct) | 이메일 Dead Letter Exchange |
+| DLX | `tracking-queue-dlx` (Direct) | 트래킹 Dead Letter Exchange |
+| DLQ | `email-queue-dlq` (Routing Key: `email-dead-letter`) | 이메일 발송 실패 메시지 보관 |
+| DLQ | `tracking-queue-dlq` (Routing Key: `tracking-dead-letter`) | 클릭 트래킹 실패 메시지 보관 |
 
 **Consumer 동적 확장:**
 

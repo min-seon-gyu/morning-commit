@@ -44,10 +44,12 @@ MorningCommit is a daily tech blog newsletter service that:
 - **Kotlin 1.9.25** with Java 21
 - **Spring Boot 3.4.2**, Spring Cloud 2024.0.0
 - **Spring Batch 5** for scheduled batch processing
+- **Spring AI 1.0.0** for OpenAI GPT integration (ChatClient)
 - **MySQL** with Spring Data JPA
 - **RabbitMQ** for async email delivery and click tracking
 - **Thymeleaf** for email templates and web UI
-- **OpenFeign** for OpenAI API integration
+- **Kotlin Coroutines 1.8.1** for concurrent blog entry processing
+- **KotlinLogging** (`io.github.oshai:kotlin-logging-jvm`) for structured logging
 - **Rome** for RSS/Atom parsing
 - **Jsoup** for HTML scraping
 - **Redis** for caching (dashboard, post listings, search results) and email verification codes
@@ -64,7 +66,8 @@ blogCrawlingJob (Daily at 1 AM)
     ├─► Fetch RSS feeds (Rome)
     ├─► Filter recent posts (last 2 days)
     ├─► Scrape full content (Jsoup)
-    ├─► Summarize & analyze (OpenAI via Feign)
+    ├─► Summarize & analyze (OpenAI via Spring AI ChatClient)
+    │       └─► Concurrent processing with Kotlin Coroutines (Semaphore(5))
     │       └─► Promotional content filtered out
     │       └─► Extracts: summary, tags, difficulty, keyInsight, readingTimeMin
     ├─► Batch save Post entities (pre-filtered duplicates via findExistingLinks)
@@ -129,7 +132,7 @@ Unsubscribe Flow (HMAC Token-based)
 ```
 server.morningcommit
 ├── domain/           # JPA Entities (BlogSource, Post, Subscriber, ClickLog, PostSendHistory, BaseEntity)
-│                     # Blog enum, PostDocument (Elasticsearch)
+│                     # Blog enum, Difficulty enum, PostDocument (Elasticsearch)
 ├── repository/       # Spring Data JPA Repositories, PostSearchRepository (Elasticsearch)
 ├── batch/            # Spring Batch Jobs (BlogCrawlingJob, EmailDeliveryJob)
 ├── scheduler/        # @Scheduled job orchestration (JobScheduler)
@@ -140,11 +143,14 @@ server.morningcommit
 │   ├── TrackingController   # Click tracking redirect
 │   ├── SearchController     # Elasticsearch search endpoint
 │   └── SubscriberController # Email verification, subscription, unsubscription
+├── exception/
+│   ├── BusinessException    # Base exception with subclasses (NotFoundException, DuplicateException,
+│   │                        # InvalidRequestException, VerificationFailedException)
+│   ├── ErrorCode            # Enum: S001~S003, C001~C002 with HTTP status mapping
+│   └── GlobalExceptionHandler # @RestControllerAdvice returning ErrorResponse(code, message)
 ├── ai/
-│   ├── client/       # OpenAiClient (Feign)
-│   ├── dto/          # ChatCompletion DTOs
 │   └── service/
-│       ├── SummaryService        # OpenAI summarization + promotional analysis
+│       ├── SummaryService        # OpenAI summarization via Spring AI ChatClient + prompt template
 │       └── dto/BlogAnalysisResult # Summary, tags, difficulty, keyInsight, isPromotional
 ├── email/
 │   ├── dto/          # EmailRequest, ClickLogEvent, TrackedPost (includes keyInsight)
@@ -159,13 +165,13 @@ server.morningcommit
 │   │                 # PostService, PostSearchService, SubscriberService, BlogSourceService,
 │   │                 # UnsubscribeTokenService (HMAC-SHA256 token generation/validation)
 │   └── dto/          # PostClickCount, BlogClickCount, DailyClickCount
-└── config/           # RabbitMqConfig, RedisConfig, JpaConfig, FeignConfig,
+└── config/           # RabbitMqConfig, RedisConfig, JpaConfig,
                       # ElasticsearchConfig, SchedulingConfig, StringListConverter, RestPage
 ```
 
 ## Supported Blogs (Blog Enum)
 
-KAKAO_TECH, KAKAO_PAY, TOSS_TECH, WOOWA_BROS, LINE_ENGINEERING, HYPERCONNECT_TECH, KURLY, SOCAR, OLIVE_YOUNG, BANKSALAD, DEV_SISTERS
+KAKAO_TECH, KAKAO_PAY, TOSS_TECH, WOOWA_BROS, LINE_ENGINEERING, HYPERCONNECT_TECH, KURLY, SOCAR, OLIVE_YOUNG, BANKSALAD, DEV_SISTERS, MUSINSA, DAANGN
 
 ## Environment Variables
 
@@ -190,6 +196,7 @@ KAKAO_TECH, KAKAO_PAY, TOSS_TECH, WOOWA_BROS, LINE_ENGINEERING, HYPERCONNECT_TEC
 | `ELASTICSEARCH_HOST` | `localhost` | Elasticsearch host |
 | `ELASTICSEARCH_PORT` | `19200` | Elasticsearch port |
 | `ELASTIC_PASSWORD` | - | Elasticsearch xpack security password |
+| `ELASTICSEARCH_PASSWORD` | - | Kibana elasticsearch_password for kibana_system user |
 
 ## Key Components
 
@@ -218,14 +225,18 @@ Each subscriber receives one random post per day without duplicates until all po
 6. Save selection to `PostSendHistory`
 
 ### RabbitMQ
-- Exchange: `email-exchange` (Direct)
+- Exchanges:
+  - `email-exchange` (Direct) - Email delivery
+  - `tracking-exchange` (Direct) - Click tracking
 - Queues:
   - `email-queue` (Routing Key: `send-email`) - Email delivery
   - `tracking-queue` (Routing Key: `tracking-log`) - Click tracking
-- Dead Letter Exchange: `email-dlx` (Direct)
+- Dead Letter Exchanges:
+  - `email-queue-dlx` (Direct) - Failed email messages
+  - `tracking-queue-dlx` (Direct) - Failed tracking messages
 - Dead Letter Queues:
-  - `email-queue-dlq` (Routing Key: `send-email`) - Failed email messages
-  - `tracking-queue-dlq` (Routing Key: `tracking-log`) - Failed tracking messages
+  - `email-queue-dlq` (Routing Key: `email-dead-letter`) - Failed email messages
+  - `tracking-queue-dlq` (Routing Key: `tracking-dead-letter`) - Failed tracking messages
 - Consumer Dynamic Scaling:
   - EmailConsumer: `concurrency = "3-10"` — scales 3 to 10 threads based on SMTP I/O load
   - TrackingConsumer: `concurrency = "2-5"` — scales 2 to 5 threads based on DB insert load
@@ -252,6 +263,7 @@ Each subscriber receives one random post per day without duplicates until all po
 ### Email Verification & Subscription
 - `POST /api/subscribers/send-verification` - Sends 6-digit verification code via email (Redis, 5-min TTL)
 - `POST /api/subscribers/verify` - Verifies code and creates active subscriber (or reactivates existing)
+  - Verification attempt limit: max 5 attempts per code, invalidated after exceeded
 - `POST /api/subscribers/unsubscribe` - Validates HMAC token and marks subscriber inactive
 
 ### Full-Text Search (Elasticsearch)
@@ -285,7 +297,7 @@ Each subscriber receives one random post per day without duplicates until all po
 - Redirect URL is validated against known Post links in DB (prevents open redirect)
 - Links in newsletter emails are wrapped with tracking URLs
 - Click events stored in `ClickLog` entity for analytics
-- Uses sealed interface `TrackResult` (Success/InvalidUrl) for type-safe results
+- Invalid URLs throw `InvalidRequestException`
 
 ### Unsubscribe (HMAC Token-based)
 - `UnsubscribeTokenService` generates/validates HMAC-SHA256 tokens using `app.unsubscribe-secret`
@@ -305,7 +317,7 @@ All services are orchestrated via `docker-compose.yml` on a `morningcommit-net` 
 - **MySQL** (port 13306) with health check
 - **Redis** (port 16379)
 - **Elasticsearch 8.12.0** (port 19200) - Custom image with nori plugin (`docker/elasticsearch/Dockerfile`), xpack security enabled, JVM heap 256MB
-- **Kibana 8.12.0** (port 15601) - Connected to Elasticsearch
+- **Kibana 8.12.0** (port 15601) - Connected to Elasticsearch (uses `ELASTICSEARCH_PASSWORD` for kibana_system user)
 - **RabbitMQ** (port 15673, management UI on 25672) with health check
 - **Spring Boot app** (port 18080) depends on all services being healthy
 - Persistent volumes: `mysql_data`, `es_data`
@@ -315,7 +327,7 @@ All services are orchestrated via `docker-compose.yml` on a `morningcommit-net` 
 Key fields on the `Post` entity:
 - `title`, `link`, `content`, `summary` - Core article data
 - `tags: List<String>` - AI-extracted tags
-- `difficulty: String` - Article difficulty level (BEGINNER, INTERMEDIATE, ADVANCED, EXPERT)
+- `difficulty: Difficulty` - Article difficulty enum (BEGINNER, INTERMEDIATE, ADVANCED, EXPERT)
 - `keyInsight: String?` - AI-extracted key insight from the article
 - `readingTimeMin: Int` - Estimated reading time in minutes
 - `blog: Blog` - Source blog enum
@@ -335,7 +347,8 @@ Key fields on the `Post` entity:
 - Package: `server.morningcommit.*`
 - JPA entities use `allOpen` plugin for `@Entity`, `@MappedSuperclass`, `@Embeddable`
 - Kotlin strict JSR-305 null-safety mode enabled
-- Sealed interfaces used for type-safe result handling (`AnalyticsResult`, `TrackResult`, `UnsubscribeResult`)
+- Sealed interface `AnalyticsResult` (Success/NoData) for type-safe result handling
+- Custom exception hierarchy (`BusinessException` → `NotFoundException`, `DuplicateException`, `InvalidRequestException`, `VerificationFailedException`) with `GlobalExceptionHandler`
 - `RestPage<T>` wrapper used for JSON-serializable paginated responses
 
 ### Layered Responsibility
