@@ -377,9 +377,3 @@ Docker Compose로 전체 인프라를 관리하며, `morningcommit-net` 브릿�
 | `ViewController` | index/analytics/unsubscribe 분기 | 6 |
 | **합계** | | **51** |
 
----
-
-## 커밋 메시지 규칙
-
-- 신규 커밋은 **한글**로 작성합니다 (conventional prefix는 영문 유지: `feat:`, `fix:`, `refactor:`, `perf:`, `test:`, `docs:`)
-- 예: `refactor: XML 정제 로직을 XmlSanitizer util로 공통화`
