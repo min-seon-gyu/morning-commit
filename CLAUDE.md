@@ -14,8 +14,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Run all tests
 ./gradlew test
 
+# Run only unit tests (no infrastructure required)
+./gradlew test --tests "server.morningcommit.service.*" --tests "server.morningcommit.controller.*"
+
 # Run a single test class
-./gradlew test --tests "server.morningcommit.RssParsingTest"
+./gradlew test --tests "server.morningcommit.service.SubscriberServiceTest"
 
 # Clean build
 ./gradlew clean build
@@ -45,6 +48,7 @@ MorningCommit is a daily tech blog newsletter service that:
 - **Spring Boot 3.4.2**, Spring Cloud 2024.0.0
 - **Spring Batch 5** for scheduled batch processing
 - **Spring AI 1.0.0** for OpenAI GPT integration (ChatClient)
+- **Spring Validation** (`spring-boot-starter-validation`) for DTO `@Valid` 검증
 - **MySQL** with Spring Data JPA
 - **RabbitMQ** for async email delivery and click tracking
 - **Thymeleaf** for email templates and web UI
@@ -52,37 +56,41 @@ MorningCommit is a daily tech blog newsletter service that:
 - **KotlinLogging** (`io.github.oshai:kotlin-logging-jvm`) for structured logging
 - **Rome** for RSS/Atom parsing
 - **Jsoup** for HTML scraping
-- **Redis** for caching (dashboard, post listings, search results) and email verification codes
+- **Redis** for caching (dashboard, post listings, search results, valid post links) and email verification codes
 - **Elasticsearch 8.12.0** with nori Korean analyzer for full-text post search
 - **Kibana 8.12.0** for Elasticsearch visualization
 - **ktlint** for Kotlin code style enforcement (disabled rules: `import-ordering`, `no-wildcard-imports`, `filename`, `indent`, `parameter-list-wrapping`)
+- **Testing**: JUnit 5, MockK 1.13.8, SpringMockK 4.0.2 (`@MockkBean` for `@WebMvcTest`)
 
 ## Architecture
 
 ```
-blogCrawlingJob (Daily at 1 AM)
+blogCrawlingJob (Daily at 1 AM) — BlogCrawlingJobConfig delegates to:
     │
-    ├─► Read active BlogSource entities
-    ├─► Fetch RSS feeds (Rome)
-    ├─► Filter recent posts (last 2 days)
-    ├─► Scrape full content (Jsoup)
-    ├─► Summarize & analyze (OpenAI via Spring AI ChatClient)
-    │       └─► Concurrent processing with Kotlin Coroutines (Semaphore(5))
-    │       └─► Promotional content filtered out
-    │       └─► Extracts: summary, tags, difficulty, keyInsight, readingTimeMin
-    ├─► Batch save Post entities (pre-filtered duplicates via findExistingLinks)
-    └─► Index saved posts to Elasticsearch
+    ├─► BlogCrawlingService.processSource(blogSource, cutoff):
+    │       ├─► Read existing links for the blog (findLinksByBlog)
+    │       ├─► Fetch + sanitize RSS (XmlSanitizer) + parse (Rome)
+    │       ├─► Filter entries newer than cutoff (last 2 days)
+    │       ├─► Concurrent per-entry processing (Kotlin Coroutines + Semaphore(5))
+    │       │       ├─► Skip if link already exists
+    │       │       ├─► Scrape content (Jsoup) — fallback to RSS content:encoded → description
+    │       │       ├─► SummaryService.analyze (Spring AI ChatClient)
+    │       │       ├─► Drop if isPromotional or analysis==null
+    │       │       └─► Build Post (parseDifficulty, estimateReadingTime helpers)
+    │       └─► Return List<Post>
+    └─► PostIndexer.indexAll(posts):
+            ├─► Batch save via postRepository.saveAll
+            ├─► Clear POST_LISTING cache
+            └─► Index saved posts to Elasticsearch
 
-emailDeliveryJob (Daily at 7 AM)
+emailDeliveryJob (Daily at 7 AM) — EmailDeliveryJobConfig delegates to:
     │
-    ├─► Read active Subscriber entities
-    ├─► Shuffle-and-Deplete Post Selection:
-    │       ├─► Fetch all Post IDs
-    │       ├─► Get sent Post IDs from PostSendHistory
-    │       ├─► Calculate candidates (all - sent)
+    ├─► Read active Subscriber entities (JpaPagingItemReader)
+    ├─► PostSelectionService.selectNextPostId(subscriber, allPostIdSet):
+    │       ├─► (Shuffle-and-Deplete) Compute candidates = allPostIds - sentPostIds
     │       ├─► If empty: Reset history, use all posts
     │       ├─► Random select one post
-    │       └─► Save to PostSendHistory
+    │       └─► Persist PostSendHistory
     └─► Publish EmailRequest to RabbitMQ (RetryTemplate retries on failure)
             │
             └─► EmailConsumer (async)
@@ -98,6 +106,8 @@ Click Tracking Flow
     User clicks tracked link in email
     │
     └─► GET /track?url={encodedUrl}&subscriberId={id}
+            ├─► PostLinkValidator.exists(url) — @Cacheable(POST_LINK_EXISTS, 1h, unless=!#result)
+            │       └─► Invalid URL → InvalidRequestException (C001)
             ├─► Publish ClickLogEvent to RabbitMQ
             ├─► Redirect to original URL (302)
             │
@@ -134,39 +144,67 @@ server.morningcommit
 ├── domain/           # JPA Entities (BlogSource, Post, Subscriber, ClickLog, PostSendHistory, BaseEntity)
 │                     # Blog enum, Difficulty enum, PostDocument (Elasticsearch)
 ├── repository/       # Spring Data JPA Repositories, PostSearchRepository (Elasticsearch)
-├── batch/            # Spring Batch Jobs (BlogCrawlingJob, EmailDeliveryJob)
+├── batch/
+│   ├── BlogCrawlingJobConfig  # Batch Job/Step/Reader/Processor/Writer bean definitions only
+│   ├── BlogCrawlingService    # RSS fetch + AI analysis + Post construction business logic
+│   ├── PostIndexer            # Save posts + invalidate cache + Elasticsearch indexing
+│   └── EmailDeliveryJobConfig # Newsletter delivery Job (delegates selection to PostSelectionService)
 ├── scheduler/        # @Scheduled job orchestration (JobScheduler)
 ├── scraper/          # HtmlScraper (Jsoup)
 ├── controller/
-│   ├── dto/          # SendVerificationRequest, VerifyRequest, UnsubscribeRequest
+│   ├── dto/          # @Valid annotated request DTOs
+│   │                 # SendVerificationRequest (@Email, @NotBlank)
+│   │                 # VerifyRequest (@Email, @Pattern "\d{6}")
+│   │                 # UnsubscribeRequest (@Email, @NotBlank)
 │   ├── ViewController       # Web UI (posts, analytics, unsubscribe confirmation)
 │   ├── TrackingController   # Click tracking redirect
 │   ├── SearchController     # Elasticsearch search endpoint
-│   └── SubscriberController # Email verification, subscription, unsubscription
+│   └── SubscriberController # Email verification, subscription, unsubscription (@Valid)
 ├── exception/
 │   ├── BusinessException    # Base exception with subclasses (NotFoundException, DuplicateException,
 │   │                        # InvalidRequestException, VerificationFailedException)
 │   ├── ErrorCode            # Enum: S001~S003, C001~C002 with HTTP status mapping
-│   └── GlobalExceptionHandler # @RestControllerAdvice returning ErrorResponse(code, message)
+│   └── GlobalExceptionHandler # @RestControllerAdvice - handles BusinessException,
+│                             # MethodArgumentNotValidException, HttpMessageNotReadableException,
+│                             # MissingServletRequestParameterException,
+│                             # MethodArgumentTypeMismatchException,
+│                             # HttpRequestMethodNotSupportedException, + fallback Exception
 ├── ai/
 │   └── service/
 │       ├── SummaryService        # OpenAI summarization via Spring AI ChatClient + prompt template
 │       └── dto/BlogAnalysisResult # Summary, tags, difficulty, keyInsight, isPromotional
 ├── email/
 │   ├── dto/          # EmailRequest, ClickLogEvent, TrackedPost (includes keyInsight)
+│   ├── EmailConstants        # EmailSubject object (VERIFICATION, NEWSLETTER titles)
 │   ├── EmailService          # Orchestrator: delegates to Sender, Renderer, UrlGenerator
-│   ├── EmailSender           # SMTP sending via JavaMailSender
+│   ├── EmailSender           # SMTP sending via JavaMailSender (uses KLogger.runLogging)
 │   ├── EmailTemplateRenderer # Thymeleaf rendering + unsubscribe token embedding
 │   ├── EmailUrlGenerator     # Tracking URL generation
-│   ├── EmailProducer         # RabbitMQ publisher
-│   ├── EmailConsumer         # RabbitMQ listener
-│   └── TrackingConsumer      # Click tracking listener (clears analytics cache)
-├── service/          # AnalyticsService (contains nested AnalyticsDashboard), TrackingService,
-│   │                 # PostService, PostSearchService, SubscriberService, BlogSourceService,
-│   │                 # UnsubscribeTokenService (HMAC-SHA256 token generation/validation)
-│   └── dto/          # PostClickCount, BlogClickCount, DailyClickCount
-└── config/           # RabbitMqConfig, RedisConfig, JpaConfig,
-                      # ElasticsearchConfig, SchedulingConfig, StringListConverter, RestPage
+│   ├── EmailProducer         # RabbitMQ publisher (uses RabbitMqProperties.email.exchange)
+│   ├── EmailConsumer         # RabbitMQ listener (@RabbitListener ${app.rabbitmq.email.queue})
+│   └── TrackingConsumer      # Click tracking listener (@RabbitListener ${app.rabbitmq.tracking.queue})
+├── service/
+│   ├── AnalyticsService          # Dashboard (nested AnalyticsDashboard, sealed AnalyticsResult)
+│   ├── TrackingService           # Publishes ClickLogEvent; delegates URL check to PostLinkValidator
+│   ├── PostLinkValidator         # @Cacheable(POST_LINK_EXISTS, 1h, unless=!#result) URL existence check
+│   ├── PostSelectionService      # Shuffle-and-Deplete algorithm (@Transactional)
+│   ├── PostService               # Post listings (@Cacheable POST_LISTING)
+│   ├── PostSearchService         # Elasticsearch search
+│   ├── SubscriberService         # Verification code + subscribe/unsubscribe
+│   ├── BlogSourceService         # Active blog source lookup
+│   ├── UnsubscribeTokenService   # HMAC-SHA256 token generation/validation
+│   └── dto/                      # PostClickCount, BlogClickCount, DailyClickCount
+├── util/
+│   ├── ErrorLogging.kt           # KLogger.runLogging inline extension (try-catch log+throw helper)
+│   └── XmlSanitizer.kt           # DOCTYPE and control character stripping for RSS XML
+└── config/
+    ├── RabbitMqConfig            # Exchange/Queue/Binding beans wired from RabbitMqProperties
+    ├── RabbitMqProperties        # @ConfigurationProperties(prefix="app.rabbitmq")
+    │                              # — email/tracking × exchange/queue/routingKey/dlx/dlq/dlqRoutingKey
+    ├── RedisConfig               # CacheManager with per-cache TTLs, constants:
+    │                              # ANALYTICS_DASHBOARD, POST_LISTING, POST_SEARCH, POST_LINK_EXISTS
+    ├── JpaConfig, ElasticsearchConfig, SchedulingConfig
+    ├── StringListConverter, RestPage
 ```
 
 ## Supported Blogs (Blog Enum)
@@ -290,14 +328,15 @@ Each subscriber receives one random post per day without duplicates until all po
 - `ANALYTICS_DASHBOARD`: 10-minute TTL for dashboard statistics
 - `POST_LISTING`: 30-minute TTL for paginated post results
 - `POST_SEARCH`: 15-minute TTL for search results
+- `POST_LINK_EXISTS`: 60-minute TTL for URL validity lookup in click tracking (only `true` results cached via `unless = "!#result"`)
 - Email verification codes: 5-minute TTL
 
 ### Click Tracking
 - `GET /track?url={encodedUrl}&subscriberId={id}` - Tracks click and redirects (302)
-- Redirect URL is validated against known Post links in DB (prevents open redirect)
+- URL validity checked by `PostLinkValidator.exists(url)` which caches valid links for 1 hour in Redis to avoid repeated DB lookups
+- Prevents open redirect — unknown URLs throw `InvalidRequestException`
 - Links in newsletter emails are wrapped with tracking URLs
 - Click events stored in `ClickLog` entity for analytics
-- Invalid URLs throw `InvalidRequestException`
 
 ### Unsubscribe (HMAC Token-based)
 - `UnsubscribeTokenService` generates/validates HMAC-SHA256 tokens using `app.unsubscribe-secret`
@@ -357,6 +396,27 @@ Key fields on the `Post` entity:
   - Examples: state transition validation, duplication checks, policy decisions, permission-based logic
 - The API (Controller) layer is responsible only for the following:
   - Request parameter binding
-  - Input format validation (e.g., @NotNull, @Size)
+  - Input format validation (e.g., @NotNull, @Size) via `@Valid` on request DTOs
   - Authentication and authorization
   - Invoking Services and mapping responses
+
+## Testing
+
+- **Unit tests** use MockK (`io.mockk:mockk:1.13.8`) for service layer
+- **Controller tests** use `@WebMvcTest` + SpringMockK's `@MockkBean` (`com.ninja-squad:springmockk:4.0.2`)
+- Tests run without Docker infrastructure (no `@SpringBootTest` for unit coverage)
+- 51 unit tests as of latest refactor pass covering Subscriber/Post/Analytics/PostSelection/Tracking services and all four controllers
+
+## Commit Message Convention
+
+- Commit subjects and bodies are written in **Korean**
+- Conventional Commit prefixes remain in English (`feat:`, `fix:`, `refactor:`, `perf:`, `test:`, `docs:`)
+- Example: `refactor: BlogCrawlingJobConfig 책임 분리 (224줄 → 77줄)`
+
+## RabbitMQ Configuration Externalization
+
+Exchange/queue/routing-key names are externalized via `@ConfigurationProperties(prefix="app.rabbitmq")`:
+- Bean definitions in `RabbitMqConfig` read from `RabbitMqProperties`
+- `@RabbitListener` uses `${app.rabbitmq.<email|tracking>.queue}` placeholders
+- `EmailProducer` and `TrackingService` inject `RabbitMqProperties` instead of referencing constants
+- Defaults live in `src/main/resources/application.yml` under `app.rabbitmq.*`

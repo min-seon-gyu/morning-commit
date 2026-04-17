@@ -161,43 +161,54 @@ emailDeliveryJob
 server.morningcommit
 ├── domain/           # JPA 엔티티, Blog enum, Difficulty enum, PostDocument (Elasticsearch)
 ├── repository/       # Spring Data JPA Repository, PostSearchRepository (Elasticsearch)
-├── batch/            # Spring Batch Job (BlogCrawlingJob, EmailDeliveryJob)
+├── batch/
+│   ├── BlogCrawlingJobConfig  # Spring Batch Job/Step/Reader/Writer 배선만 담당
+│   ├── BlogCrawlingService    # RSS 수집·스크래핑·AI 분석·Post 생성 비즈니스 로직
+│   ├── PostIndexer            # Post 저장·캐시 초기화·Elasticsearch 색인
+│   └── EmailDeliveryJobConfig # 뉴스레터 발송 Job
 ├── scheduler/        # @Scheduled 작업 오케스트레이션 (JobScheduler)
 ├── scraper/          # HtmlScraper (Jsoup)
 ├── controller/
-│   ├── dto/          # SendVerificationRequest, VerifyRequest, UnsubscribeRequest
+│   ├── dto/          # @Valid 검증 적용된 요청 DTO (SendVerification, Verify, Unsubscribe)
 │   ├── ViewController       # 웹 UI (포스트, 분석, 구독해지)
 │   ├── TrackingController   # 클릭 트래킹 리다이렉트
 │   ├── SearchController     # Elasticsearch 검색 엔드포인트
-│   └── SubscriberController # 이메일 인증, 구독, 구독해지
+│   └── SubscriberController # 이메일 인증, 구독, 구독해지 (@Valid 적용)
 ├── exception/
 │   ├── BusinessException    # 기본 예외 (NotFoundException, DuplicateException 등)
 │   ├── ErrorCode            # 에러 코드 Enum (S001~S003, C001~C002)
-│   └── GlobalExceptionHandler # @RestControllerAdvice 전역 예외 처리
+│   └── GlobalExceptionHandler # 비즈니스/검증/Spring MVC 예외 통합 처리
 ├── ai/
 │   └── service/
 │       ├── SummaryService        # Spring AI ChatClient 기반 요약 + 홍보성 분석
 │       └── dto/BlogAnalysisResult # 요약, 태그, 난이도, 핵심 인사이트, 홍보 여부
 ├── email/
 │   ├── dto/          # EmailRequest, ClickLogEvent, TrackedPost
+│   ├── EmailConstants        # EmailSubject (인증/뉴스레터 제목 상수)
 │   ├── EmailService          # 오케스트레이터 (Sender, Renderer, UrlGenerator에 위임)
 │   ├── EmailSender           # SMTP 발송 (JavaMailSender)
 │   ├── EmailTemplateRenderer # Thymeleaf 렌더링 + 구독해지 토큰 삽입
 │   ├── EmailUrlGenerator     # 트래킹 URL 생성
-│   ├── EmailProducer         # RabbitMQ Publisher
-│   ├── EmailConsumer         # RabbitMQ Listener
+│   ├── EmailProducer         # RabbitMQ Publisher (RabbitMqProperties 주입)
+│   ├── EmailConsumer         # RabbitMQ Listener (${app.rabbitmq.email.queue})
 │   └── TrackingConsumer      # 클릭 트래킹 Listener
 ├── service/
 │   ├── AnalyticsService          # 분석 대시보드 (AnalyticsDashboard 포함)
-│   ├── TrackingService           # 클릭 트래킹
+│   ├── TrackingService           # 클릭 트래킹 이벤트 발행
+│   ├── PostLinkValidator         # @Cacheable 기반 URL 유효성 검증 (1시간 TTL)
+│   ├── PostSelectionService      # Shuffle-and-Deplete 알고리즘 (뉴스레터 포스트 선택)
 │   ├── PostService               # 포스트 관리
 │   ├── PostSearchService         # Elasticsearch 검색
 │   ├── SubscriberService         # 구독자 관리
 │   ├── BlogSourceService         # 블로그 소스 관리
 │   ├── UnsubscribeTokenService   # HMAC-SHA256 토큰 생성/검증
 │   └── dto/          # PostClickCount, BlogClickCount, DailyClickCount
-└── config/           # RabbitMqConfig, RedisConfig, JpaConfig,
-                      # ElasticsearchConfig, SchedulingConfig, StringListConverter, RestPage
+├── util/
+│   ├── ErrorLogging          # KLogger.runLogging 확장 (try-catch log+throw 공통화)
+│   └── XmlSanitizer          # RSS XML의 DOCTYPE·제어문자 제거
+└── config/           # RabbitMqConfig, RabbitMqProperties(@ConfigurationProperties),
+                      # RedisConfig, JpaConfig, ElasticsearchConfig, SchedulingConfig,
+                      # StringListConverter, RestPage
 ```
 
 ---
@@ -271,9 +282,12 @@ OpenAI GPT가 각 아티클을 분석하여 다음을 추출합니다:
 | `ANALYTICS_DASHBOARD` | 10분 | 대시보드 통계 |
 | `POST_LISTING` | 30분 | 포스트 목록 페이지네이션 |
 | `POST_SEARCH` | 15분 | 검색 결과 |
+| `POST_LINK_EXISTS` | 60분 | 트래킹 URL 유효성 검증 (유효한 링크만 캐싱) |
 | 이메일 인증 코드 | 5분 | 구독 인증 코드 |
 
 ### RabbitMQ
+
+Exchange·Queue·Routing Key는 `app.rabbitmq.*` 설정으로 외부화되어 `RabbitMqProperties`를 통해 주입됩니다. 기본값:
 
 | 항목 | 값 | 용도 |
 |------|-----|------|
@@ -331,3 +345,41 @@ Docker Compose로 전체 인프라를 관리하며, `morningcommit-net` 브릿�
 |-----|------|------|
 | `blogCrawlingJob` | `0 0 1 * * *` | 매일 오전 1시 - RSS 크롤링, AI 요약, ES 인덱싱 |
 | `emailDeliveryJob` | `0 0 7 * * *` | 매일 오전 7시 - 뉴스레터 발송 |
+
+---
+
+## 테스트
+
+단위 테스트는 MockK + SpringMockK(`com.ninja-squad:springmockk`) 조합을 사용하며, 인프라 없이 실행 가능합니다.
+
+### 실행
+
+```bash
+# 서비스 레이어 단위 테스트
+./gradlew test --tests "server.morningcommit.service.*"
+
+# 컨트롤러 레이어 @WebMvcTest
+./gradlew test --tests "server.morningcommit.controller.*"
+```
+
+### 커버리지
+
+| 영역 | 테스트 파일 | 개수 |
+|------|-------------|------|
+| `SubscriberService` | 인증 코드, 구독/해지, 재시도 제한 | 11 |
+| `PostService` | 페이지네이션, 블로그 필터 | 6 |
+| `AnalyticsService` | 대시보드 집계, NoData 분기 | 5 |
+| `PostSelectionService` | Shuffle-and-Deplete | 5 |
+| `TrackingService` | URL 검증, 이벤트 발행 | 2 |
+| `SubscriberController` | @Valid 실패, 비즈니스 예외 매핑 | 9 |
+| `TrackingController` | 리다이렉트, 파라미터 검증 | 4 |
+| `SearchController` | 검색 모드 조합, enum 바인딩 | 3 |
+| `ViewController` | index/analytics/unsubscribe 분기 | 6 |
+| **합계** | | **51** |
+
+---
+
+## 커밋 메시지 규칙
+
+- 신규 커밋은 **한글**로 작성합니다 (conventional prefix는 영문 유지: `feat:`, `fix:`, `refactor:`, `perf:`, `test:`, `docs:`)
+- 예: `refactor: XML 정제 로직을 XmlSanitizer util로 공통화`
