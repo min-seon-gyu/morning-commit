@@ -1,5 +1,6 @@
 package server.morningcommit.controller
 
+import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -21,7 +22,7 @@ class SubscriberController(
 ) {
 
     @PostMapping("/send-verification")
-    fun sendVerification(@RequestBody request: SendVerificationRequest): ResponseEntity<Void> {
+    fun sendVerification(@Valid @RequestBody request: SendVerificationRequest): ResponseEntity<Void> {
         if (subscriberService.isAlreadyActive(request.email)) {
             throw DuplicateException("이미 구독 중인 이메일입니다: ${request.email}")
         }
@@ -33,14 +34,14 @@ class SubscriberController(
     }
 
     @PostMapping("/verify")
-    fun verify(@RequestBody request: VerifyRequest): ResponseEntity<Void> {
+    fun verify(@Valid @RequestBody request: VerifyRequest): ResponseEntity<Void> {
         subscriberService.verifyAndSubscribe(request.email, request.code)
 
         return ResponseEntity.status(HttpStatus.CREATED).build()
     }
 
     @PostMapping("/unsubscribe")
-    fun unsubscribeWithToken(@RequestBody request: UnsubscribeRequest): ResponseEntity<Void> {
+    fun unsubscribeWithToken(@Valid @RequestBody request: UnsubscribeRequest): ResponseEntity<Void> {
         if (!unsubscribeTokenService.validateToken(request.email, request.token)) {
             throw InvalidRequestException("유효하지 않은 구독 해지 토큰입니다")
         }
