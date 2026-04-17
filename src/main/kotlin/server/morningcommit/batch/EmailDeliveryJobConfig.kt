@@ -15,11 +15,10 @@ import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilde
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.transaction.PlatformTransactionManager
-import server.morningcommit.domain.PostSendHistory
 import server.morningcommit.domain.Subscriber
 import server.morningcommit.email.EmailProducer
 import server.morningcommit.email.dto.EmailRequest
-import server.morningcommit.repository.PostSendHistoryRepository
+import server.morningcommit.service.PostSelectionService
 import server.morningcommit.service.PostService
 
 @Configuration
@@ -29,7 +28,7 @@ class EmailDeliveryJobConfig(
     private val entityManagerFactory: EntityManagerFactory,
     private val postService: PostService,
     private val emailProducer: EmailProducer,
-    private val postSendHistoryRepository: PostSendHistoryRepository
+    private val postSelectionService: PostSelectionService
 ) {
     private val log = KotlinLogging.logger {}
 
@@ -67,22 +66,8 @@ class EmailDeliveryJobConfig(
         val allPostIdSet = postService.findAllIds().toSet()
 
         return ItemProcessor { subscriber ->
-            if (allPostIdSet.isEmpty()) {
-                return@ItemProcessor null
-            }
-
-            val sentPostIds = postSendHistoryRepository.findPostIdsBySubscriberId(subscriber.id!!)
-
-            var candidates = allPostIdSet - sentPostIds
-
-            if (candidates.isEmpty()) {
-                postSendHistoryRepository.deleteAllBySubscriberId(subscriber.id!!)
-
-                candidates = allPostIdSet
-            }
-
-            val selectedPostId = candidates.random()
-            postSendHistoryRepository.save(PostSendHistory(subscriber = subscriber, postId = selectedPostId))
+            val selectedPostId = postSelectionService.selectNextPostId(subscriber, allPostIdSet)
+                ?: return@ItemProcessor null
 
             EmailRequest(subscriberId = subscriber.id!!, email = subscriber.email, postId = selectedPostId)
         }
