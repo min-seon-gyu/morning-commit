@@ -4,6 +4,7 @@ import com.rometools.rome.io.SyndFeedInput
 import org.jsoup.Jsoup
 import org.junit.jupiter.api.Test
 import server.morningcommit.scraper.HtmlScraper
+import server.morningcommit.util.XmlSanitizer
 import java.io.StringReader
 import java.net.URI
 import java.net.http.HttpClient
@@ -31,12 +32,6 @@ class RssParsingTest {
         return rssHttpClient.send(request, HttpResponse.BodyHandlers.ofString()).body()
     }
 
-    private fun sanitizeXml(xml: String): String {
-        return xml
-            .replace(Regex("<!DOCTYPE[^>]*>", RegexOption.IGNORE_CASE), "")
-            .replace(Regex("[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\uFFFE\\uFFFF]"), "")
-    }
-
     private fun toLocalDateTime(date: Date?): LocalDateTime? {
         return date?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalDateTime()
     }
@@ -51,7 +46,7 @@ class RssParsingTest {
         val rssUrl = "https://medium.com/feed/musinsa-tech"
 
         val rawXml = fetchRssFeed(rssUrl)
-        val sanitizedXml = sanitizeXml(rawXml)
+        val sanitizedXml = XmlSanitizer.sanitize(rawXml)
         val feed = SyndFeedInput().build(StringReader(sanitizedXml))
 
         println("=== Feed Info ===")
@@ -97,7 +92,7 @@ class RssParsingTest {
         val rssUrl = "https://medium.com/feed/musinsa-tech"
 
         val rawXml = fetchRssFeed(rssUrl)
-        val sanitizedXml = sanitizeXml(rawXml)
+        val sanitizedXml = XmlSanitizer.sanitize(rawXml)
         val feed = SyndFeedInput().build(StringReader(sanitizedXml))
 
         val firstEntry = feed.entries.firstOrNull()

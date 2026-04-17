@@ -17,6 +17,7 @@ import server.morningcommit.domain.Difficulty
 import server.morningcommit.domain.Post
 import server.morningcommit.repository.PostRepository
 import server.morningcommit.scraper.HtmlScraper
+import server.morningcommit.util.XmlSanitizer
 import java.io.StringReader
 import java.net.URI
 import java.net.http.HttpClient
@@ -60,7 +61,7 @@ class BlogCrawlingService(
 
     private fun fetchRecentEntries(rssUrl: String, cutoff: LocalDateTime): List<SyndEntry> {
         val rawXml = fetchRssFeed(rssUrl)
-        val sanitizedXml = sanitizeXml(rawXml)
+        val sanitizedXml = XmlSanitizer.sanitize(rawXml)
         val feed = SyndFeedInput().build(StringReader(sanitizedXml))
 
         return feed.entries.filter { entry ->
@@ -150,12 +151,6 @@ class BlogCrawlingService(
             .build()
 
         return rssHttpClient.send(request, HttpResponse.BodyHandlers.ofString()).body()
-    }
-
-    private fun sanitizeXml(xml: String): String {
-        return xml
-            .replace(Regex("<!DOCTYPE[^>]*>", RegexOption.IGNORE_CASE), "")
-            .replace(Regex("[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\uFFFE\\uFFFF]"), "")
     }
 
     private fun toLocalDateTime(date: Date?): LocalDateTime? {
