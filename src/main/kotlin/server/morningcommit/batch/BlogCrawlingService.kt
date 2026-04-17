@@ -12,6 +12,7 @@ import kotlinx.coroutines.sync.withPermit
 import org.jsoup.Jsoup
 import org.springframework.stereotype.Service
 import server.morningcommit.ai.service.SummaryService
+import server.morningcommit.ai.service.dto.BlogAnalysisResult
 import server.morningcommit.domain.BlogSource
 import server.morningcommit.domain.Difficulty
 import server.morningcommit.domain.Post
@@ -98,33 +99,34 @@ class BlogCrawlingService(
         existingLinks: Set<String>,
         blogSource: BlogSource
     ): Post? {
-        val link = entry.link ?: return null
-        if (link in existingLinks) return null
+        val link = entry.link?.takeIf { it !in existingLinks } ?: return null
 
         val fullContent = extractContent(entry, link)
-        val analysisResult = summaryService.analyze(fullContent)
-
-        if (analysisResult == null) {
+        val analysis = summaryService.analyze(fullContent) ?: run {
             log.warn { "AI 분석 실패로 포스트 건너뜀: ${entry.title}" }
             return null
         }
-        if (analysisResult.isPromotional) return null
 
-        val readingTimeMin = ceil(fullContent.length / 500.0).toInt().coerceAtLeast(1)
-        val difficulty = try {
-            Difficulty.valueOf(analysisResult.difficulty)
-        } catch (e: IllegalArgumentException) {
-            Difficulty.INTERMEDIATE
-        }
+        if (analysis.isPromotional) return null
 
+        return toPost(entry, link, fullContent, analysis, blogSource)
+    }
+
+    private fun toPost(
+        entry: SyndEntry,
+        link: String,
+        content: String,
+        analysis: BlogAnalysisResult,
+        blogSource: BlogSource
+    ): Post {
         return Post(
             title = entry.title ?: "Untitled",
             link = link,
-            summary = analysisResult.summary,
-            keyInsight = analysisResult.keyInsight,
-            tags = analysisResult.tags,
-            difficulty = difficulty,
-            readingTimeMin = readingTimeMin,
+            summary = analysis.summary,
+            keyInsight = analysis.keyInsight,
+            tags = analysis.tags,
+            difficulty = parseDifficulty(analysis.difficulty),
+            readingTimeMin = estimateReadingTime(content),
             publishDate = toLocalDateTime(entry.publishedDate ?: entry.updatedDate),
             blog = blogSource.blog
         )
@@ -134,13 +136,28 @@ class BlogCrawlingService(
         return try {
             htmlScraper.scrapeContent(link)
         } catch (e: Exception) {
-            val rssContent = entry.contents.firstOrNull()?.value
-            if (!rssContent.isNullOrBlank()) {
-                Jsoup.parse(rssContent).text()
-            } else {
-                entry.description?.value ?: ""
-            }
+            extractFallbackContent(entry)
         }
+    }
+
+    private fun extractFallbackContent(entry: SyndEntry): String {
+        val rssContent = entry.contents.firstOrNull()?.value
+        if (!rssContent.isNullOrBlank()) {
+            return Jsoup.parse(rssContent).text()
+        }
+        return entry.description?.value ?: ""
+    }
+
+    private fun parseDifficulty(name: String): Difficulty {
+        return try {
+            Difficulty.valueOf(name)
+        } catch (e: IllegalArgumentException) {
+            Difficulty.INTERMEDIATE
+        }
+    }
+
+    private fun estimateReadingTime(content: String): Int {
+        return ceil(content.length / 500.0).toInt().coerceAtLeast(1)
     }
 
     private fun fetchRssFeed(rssUrl: String): String {
