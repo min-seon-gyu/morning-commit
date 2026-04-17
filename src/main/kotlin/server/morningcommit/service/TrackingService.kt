@@ -5,18 +5,17 @@ import org.springframework.stereotype.Service
 import server.morningcommit.config.RabbitMqProperties
 import server.morningcommit.email.dto.ClickLogEvent
 import server.morningcommit.exception.InvalidRequestException
-import server.morningcommit.repository.PostRepository
 import java.time.LocalDateTime
 
 @Service
 class TrackingService(
     private val rabbitTemplate: RabbitTemplate,
-    private val postRepository: PostRepository,
+    private val postLinkValidator: PostLinkValidator,
     private val rabbitMqProperties: RabbitMqProperties
 ) {
 
     fun trackClick(url: String, subscriberId: Long): String {
-        if (!postRepository.existsByLink(url)) {
+        if (!postLinkValidator.exists(url)) {
             throw InvalidRequestException("유효하지 않은 URL입니다: $url")
         }
 
