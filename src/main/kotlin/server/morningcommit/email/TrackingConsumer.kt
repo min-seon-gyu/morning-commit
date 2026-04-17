@@ -4,7 +4,6 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.amqp.rabbit.annotation.RabbitListener
 import org.springframework.cache.CacheManager
 import org.springframework.stereotype.Component
-import server.morningcommit.config.RabbitMqConfig
 import server.morningcommit.config.RedisConfig
 import server.morningcommit.domain.ClickLog
 import server.morningcommit.email.dto.ClickLogEvent
@@ -18,7 +17,7 @@ class TrackingConsumer(
 ) {
     private val log = KotlinLogging.logger {}
 
-    @RabbitListener(queues = [RabbitMqConfig.TRACKING_QUEUE_NAME], concurrency = "2-5")
+    @RabbitListener(queues = ["\${app.rabbitmq.tracking.queue}"], concurrency = "2-5")
     fun handleClickLogEvent(event: ClickLogEvent) {
         log.runLogging("Failed to save click log for subscriberId=${event.subscriberId}") {
             val clickLog = ClickLog(

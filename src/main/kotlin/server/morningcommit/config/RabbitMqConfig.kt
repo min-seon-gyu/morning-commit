@@ -10,6 +10,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory
 import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter
 import org.springframework.amqp.support.converter.MessageConverter
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.retry.backoff.ExponentialBackOffPolicy
@@ -17,70 +18,44 @@ import org.springframework.retry.policy.SimpleRetryPolicy
 import org.springframework.retry.support.RetryTemplate
 
 @Configuration
-class RabbitMqConfig {
-
+@EnableConfigurationProperties(RabbitMqProperties::class)
+class RabbitMqConfig(
+    private val properties: RabbitMqProperties
+) {
     private val log = KotlinLogging.logger {}
-
-    companion object {
-        const val EMAIL_EXCHANGE_NAME = "email-exchange"
-        const val EMAIL_QUEUE_NAME = "email-queue"
-        const val EMAIL_ROUTING_KEY = "send-email"
-        const val EMAIL_DLX_NAME = "email-queue-dlx"
-        const val EMAIL_DLQ_NAME = "email-queue-dlq"
-        const val EMAIL_DLQ_ROUTING_KEY = "email-dead-letter"
-
-        const val TRACKING_EXCHANGE_NAME = "tracking-exchange"
-        const val TRACKING_QUEUE_NAME = "tracking-queue"
-        const val TRACKING_ROUTING_KEY = "tracking-log"
-        const val TRACKING_DLX_NAME = "tracking-queue-dlx"
-        const val TRACKING_DLQ_NAME = "tracking-queue-dlq"
-        const val TRACKING_DLQ_ROUTING_KEY = "tracking-dead-letter"
-    }
 
     // ==========================================
     // Main Exchange
     // ==========================================
 
     @Bean
-    fun emailExchange(): DirectExchange {
-        return DirectExchange(EMAIL_EXCHANGE_NAME)
-    }
+    fun emailExchange(): DirectExchange = DirectExchange(properties.email.exchange)
 
     @Bean
-    fun trackingExchange(): DirectExchange {
-        return DirectExchange(TRACKING_EXCHANGE_NAME)
-    }
+    fun trackingExchange(): DirectExchange = DirectExchange(properties.tracking.exchange)
 
     // ==========================================
     // Dead Letter Exchange & Queues
     // ==========================================
 
     @Bean
-    fun emailDlx(): DirectExchange {
-        return DirectExchange(EMAIL_DLX_NAME)
-    }
+    fun emailDlx(): DirectExchange = DirectExchange(properties.email.dlx)
 
     @Bean
-    fun trackingDlx(): DirectExchange {
-        return DirectExchange(TRACKING_DLX_NAME)
-    }
+    fun trackingDlx(): DirectExchange = DirectExchange(properties.tracking.dlx)
 
     @Bean
-    fun emailDlq(): Queue {
-        return Queue(EMAIL_DLQ_NAME, true)
-    }
+    fun emailDlq(): Queue = Queue(properties.email.dlq, true)
 
     @Bean
-    fun trackingDlq(): Queue {
-        return Queue(TRACKING_DLQ_NAME, true)
-    }
+    fun trackingDlq(): Queue = Queue(properties.tracking.dlq, true)
 
     @Bean
     fun emailDlqBinding(emailDlq: Queue, emailDlx: DirectExchange): Binding {
         return BindingBuilder
             .bind(emailDlq)
             .to(emailDlx)
-            .with(EMAIL_ROUTING_KEY)
+            .with(properties.email.routingKey)
     }
 
     @Bean
@@ -88,7 +63,7 @@ class RabbitMqConfig {
         return BindingBuilder
             .bind(trackingDlq)
             .to(trackingDlx)
-            .with(TRACKING_ROUTING_KEY)
+            .with(properties.tracking.routingKey)
     }
 
     // ==========================================
@@ -97,9 +72,9 @@ class RabbitMqConfig {
 
     @Bean
     fun emailQueue(): Queue {
-        return QueueBuilder.durable(EMAIL_QUEUE_NAME)
-            .deadLetterExchange(EMAIL_DLX_NAME)
-            .deadLetterRoutingKey(EMAIL_DLQ_ROUTING_KEY)
+        return QueueBuilder.durable(properties.email.queue)
+            .deadLetterExchange(properties.email.dlx)
+            .deadLetterRoutingKey(properties.email.dlqRoutingKey)
             .build()
     }
 
@@ -108,14 +83,14 @@ class RabbitMqConfig {
         return BindingBuilder
             .bind(emailQueue)
             .to(emailExchange)
-            .with(EMAIL_ROUTING_KEY)
+            .with(properties.email.routingKey)
     }
 
     @Bean
     fun trackingQueue(): Queue {
-        return QueueBuilder.durable(TRACKING_QUEUE_NAME)
-            .deadLetterExchange(TRACKING_DLX_NAME)
-            .deadLetterRoutingKey(TRACKING_DLQ_ROUTING_KEY)
+        return QueueBuilder.durable(properties.tracking.queue)
+            .deadLetterExchange(properties.tracking.dlx)
+            .deadLetterRoutingKey(properties.tracking.dlqRoutingKey)
             .build()
     }
 
@@ -124,7 +99,7 @@ class RabbitMqConfig {
         return BindingBuilder
             .bind(trackingQueue)
             .to(trackingExchange)
-            .with(TRACKING_ROUTING_KEY)
+            .with(properties.tracking.routingKey)
     }
 
     // ==========================================
@@ -132,9 +107,7 @@ class RabbitMqConfig {
     // ==========================================
 
     @Bean
-    fun messageConverter(): MessageConverter {
-        return Jackson2JsonMessageConverter()
-    }
+    fun messageConverter(): MessageConverter = Jackson2JsonMessageConverter()
 
     @Bean
     fun publishRetryTemplate(): RetryTemplate {

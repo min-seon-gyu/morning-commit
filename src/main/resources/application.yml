@@ -97,3 +97,18 @@ spring:
 app:
   base-url: ${APP_BASE_URL}
   unsubscribe-secret: ${APP_UNSUBSCRIBE_SECRET}
+  rabbitmq:
+    email:
+      exchange: email-exchange
+      queue: email-queue
+      routing-key: send-email
+      dlx: email-queue-dlx
+      dlq: email-queue-dlq
+      dlq-routing-key: email-dead-letter
+    tracking:
+      exchange: tracking-exchange
+      queue: tracking-queue
+      routing-key: tracking-log
+      dlx: tracking-queue-dlx
+      dlq: tracking-queue-dlq
+      dlq-routing-key: tracking-dead-letter
