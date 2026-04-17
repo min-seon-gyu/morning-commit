@@ -68,8 +68,11 @@ class SubscriberService(
         redisTemplate.delete("$KEY_PREFIX$email")
         redisTemplate.delete(attemptKey)
 
-        val subscriber = subscriberRepository.findByEmail(email)
-
-        subscriber?.apply { isActive = true } ?: subscriberRepository.save(Subscriber(email = email))
+        val existing = subscriberRepository.findByEmail(email)
+        if (existing != null) {
+            existing.isActive = true
+        } else {
+            subscriberRepository.save(Subscriber(email = email))
+        }
     }
 }

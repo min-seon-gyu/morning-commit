@@ -7,7 +7,7 @@ import org.hibernate.annotations.BatchSize
 @Table(name = "subscriber")
 class Subscriber(
     @BatchSize(size = 100)
-    @OneToMany(mappedBy = "subscriber", cascade = [CascadeType.ALL], orphanRemoval = true)
+    @OneToMany(mappedBy = "subscriber", cascade = [CascadeType.PERSIST])
     val sendHistories: MutableList<PostSendHistory> = mutableListOf(),
 
     @Column(nullable = false, unique = true)
