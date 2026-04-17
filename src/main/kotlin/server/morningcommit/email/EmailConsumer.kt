@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component
 import server.morningcommit.config.RabbitMqConfig
 import server.morningcommit.email.dto.EmailRequest
 import server.morningcommit.repository.PostRepository
+import server.morningcommit.util.runLogging
 
 @Component
 class EmailConsumer(
@@ -18,15 +19,12 @@ class EmailConsumer(
     fun handleEmailRequest(request: EmailRequest) {
         log.info { "Received email request for: ${request.email}" }
 
-        try {
+        log.runLogging("Failed to process email request for ${request.email}") {
             val post = postRepository.findById(request.postId).orElseThrow {
                 IllegalStateException("Post not found for ID: ${request.postId}")
             }
 
             emailService.sendNewsletter(request.email, post, request.subscriberId)
-        } catch (e: Exception) {
-            log.error(e) { "Failed to process email request for ${request.email}: ${e.message}" }
-            throw e
         }
     }
 }

@@ -9,6 +9,7 @@ import server.morningcommit.config.RedisConfig
 import server.morningcommit.domain.ClickLog
 import server.morningcommit.email.dto.ClickLogEvent
 import server.morningcommit.repository.ClickLogRepository
+import server.morningcommit.util.runLogging
 
 @Component
 class TrackingConsumer(
@@ -19,7 +20,7 @@ class TrackingConsumer(
 
     @RabbitListener(queues = [RabbitMqConfig.TRACKING_QUEUE_NAME], concurrency = "2-5")
     fun handleClickLogEvent(event: ClickLogEvent) {
-        try {
+        log.runLogging("Failed to save click log for subscriberId=${event.subscriberId}") {
             val clickLog = ClickLog(
                 subscriberId = event.subscriberId, targetUrl = event.targetUrl, clickedAt = event.timestamp
             )
@@ -28,10 +29,6 @@ class TrackingConsumer(
             cacheManager.getCache(RedisConfig.ANALYTICS_DASHBOARD)?.clear()
 
             log.info { "Successfully saved click log for subscriberId=${event.subscriberId}" }
-        } catch (e: Exception) {
-            log.error(e) { "Failed to save click log: ${e.message}" }
-
-            throw e
         }
     }
 }

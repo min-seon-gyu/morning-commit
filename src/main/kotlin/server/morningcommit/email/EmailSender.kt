@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.mail.javamail.MimeMessageHelper
 import org.springframework.stereotype.Component
+import server.morningcommit.util.runLogging
 
 @Component
 class EmailSender(
@@ -16,7 +17,7 @@ class EmailSender(
     private val log = KotlinLogging.logger {}
 
     fun sendHtmlEmail(to: String, subject: String, htmlContent: String) {
-        try {
+        log.runLogging("Failed to send email to $to") {
             val message: MimeMessage = mailSender.createMimeMessage()
 
             MimeMessageHelper(message, true, "UTF-8").apply {
@@ -28,9 +29,6 @@ class EmailSender(
 
             mailSender.send(message)
             log.info { "Email sent successfully to: $to" }
-        } catch (e: Exception) {
-            log.error(e) { "Failed to send email to $to: ${e.message}" }
-            throw e
         }
     }
 }
