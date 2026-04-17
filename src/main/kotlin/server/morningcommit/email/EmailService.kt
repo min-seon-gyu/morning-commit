@@ -18,7 +18,7 @@ class EmailService(
         log.runLogging("Failed to send verification email to $to") {
             val htmlContent = emailTemplateRenderer.renderVerificationTemplate(code)
 
-            emailSender.sendHtmlEmail(to = to, subject = "[MorningCommit] 이메일 인증번호", htmlContent = htmlContent)
+            emailSender.sendHtmlEmail(to = to, subject = EmailSubject.VERIFICATION, htmlContent = htmlContent)
         }
     }
 
@@ -27,7 +27,7 @@ class EmailService(
             val trackedPost = toTrackedPost(post, subscriberId)
             val htmlContent = emailTemplateRenderer.renderNewsletterTemplate(trackedPost, to)
 
-            emailSender.sendHtmlEmail(to = to, subject = "[MorningCommit] 오늘의 기술 블로그 다이제스트", htmlContent = htmlContent)
+            emailSender.sendHtmlEmail(to = to, subject = EmailSubject.NEWSLETTER, htmlContent = htmlContent)
         }
     }
 
